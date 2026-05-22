@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Plan — Dieta y Entrenamiento</title>
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>Tu plan personal de dieta y ejercicio</h1>
+      <p>Como invitado, introduce los datos que pediría un dietista y un entrenador. Recibirás un plan claro y fácil de seguir.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="form-section" class="card">
+      <h2>Tus datos</h2>
+      <form id="plan-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="sexo">Sexo</label>
+            <select id="sexo" name="sexo" required>
+              <option value="">— Seleccionar —</option>
+              <option value="hombre">Hombre</option>
+              <option value="mujer">Mujer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edad">Edad (años)</label>
+            <input type="number" id="edad" name="edad" min="14" max="90" required placeholder="Ej. 30" />
+          </div>
+          <div class="form-group">
+            <label for="pesoKg">Peso actual (kg)</label>
+            <input type="number" id="pesoKg" name="pesoKg" min="35" max="250" step="0.1" required placeholder="Ej. 72" />
+          </div>
+          <div class="form-group">
+            <label for="alturaCm">Altura (cm)</label>
+            <input type="number" id="alturaCm" name="alturaCm" min="120" max="220" required placeholder="Ej. 175" />
+          </div>
+          <div class="form-group full-width">
+            <label for="nivelActividad">Actividad diaria (sin contar el gym)</label>
+            <select id="nivelActividad" name="nivelActividad" required>
+              <option value="">— Cargando opciones —</option>
+            </select>
+            <span class="hint">Trabajo de oficina, caminar al trabajo, etc.</span>
+          </div>
+          <div class="form-group">
+            <label for="objetivo">Objetivo principal</label>
+            <select id="objetivo" name="objetivo" required>
+              <option value="">— Seleccionar —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="experiencia">Experiencia en el gym</label>
+            <select id="experiencia" name="experiencia" required>
+              <option value="">— Seleccionar —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="diasEntrenoSemana">Días para entrenar / semana</label>
+            <input type="number" id="diasEntrenoSemana" name="diasEntrenoSemana" min="2" max="7" value="3" required />
+            <span class="hint">Mínimo 2, máximo 7</span>
+          </div>
+          <div class="form-group">
+            <label for="comidasPorDia">Comidas al día</label>
+            <input type="number" id="comidasPorDia" name="comidasPorDia" min="1" max="5" value="4" required />
+            <span class="hint">Mínimo 1, máximo 5</span>
+          </div>
+          <div class="form-group full-width">
+            <label for="restriccionesAlimentarias">Restricciones alimentarias (opcional)</label>
+            <textarea id="restriccionesAlimentarias" name="restriccionesAlimentarias" placeholder="Ej. sin lactosa, vegetariano, alergia frutos secos…"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="lesionesLimitaciones">Lesiones o limitaciones (opcional)</label>
+            <textarea id="lesionesLimitaciones" name="lesionesLimitaciones" placeholder="Ej. molestia rodilla derecha, evitar impacto…"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="submit-btn">Generar mi plan</button>
+      </form>
+    </section>
+
+    <div id="error-container" class="error-box hidden" role="alert"></div>
+
+    <section id="results-section" class="hidden">
+      <div class="card">
+        <h2>Tu perfil energético</h2>
+        <div id="profile-stats" class="stats-row"></div>
+        <p id="legal-aviso" class="legal"></p>
+      </div>
+
+      <div class="tabs">
+        <button type="button" class="tab-btn active" data-tab="dieta">Plan de dieta</button>
+        <button type="button" class="tab-btn" data-tab="ejercicio">Plan de ejercicio</button>
+      </div>
+
+      <div id="tab-dieta"></div>
+      <div id="tab-ejercicio" class="hidden"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

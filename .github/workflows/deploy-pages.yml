@@ -27,8 +27,9 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site
-          cp -r frontend/* _site/
-          cp -r shared _site/shared
+          cp index.html _site/
+          cp -r css js shared _site/
+          touch _site/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

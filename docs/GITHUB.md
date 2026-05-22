@@ -21,8 +21,11 @@ Si GitHub pide login, usa **GitHub CLI** (`gh auth login`) o un **Personal Acces
 
 1. Entra en https://github.com/ionut5251/dietaweb  
 2. **Settings** → **Pages**  
-3. En **Build and deployment** → **Source**, elige **GitHub Actions**  
-4. Tras el primer `git push`, la acción *Deploy GitHub Pages* publicará la web  
+3. Elige **una** de estas opciones (no hace falta las dos):
+   - **Recomendado:** **Source** → **GitHub Actions** (usa el workflow automático)
+   - **Alternativa:** **Source** → **Deploy from branch** → rama `main` → carpeta `/ (root)`  
+     (en la raíz están `index.html`, `css/`, `js/` y `shared/`; el archivo `.nojekyll` evita que se muestre el README)
+4. Tras el `git push`, espera 1–2 minutos  
 
 URL pública (cuando termine el despliegue):
 
@@ -30,7 +33,10 @@ URL pública (cuando termine el despliegue):
 
 ## 3. Actualizar la web cada vez que cambies código
 
+Si editas archivos en `frontend/`, sincroniza la raíz antes del commit:
+
 ```powershell
+npm run sync:pages
 git add .
 git commit -m "Describe el cambio que hiciste"
 git push

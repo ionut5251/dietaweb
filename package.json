@@ -6,6 +6,7 @@
   "scripts": {
     "install:all": "npm install --prefix backend",
     "start": "npm start --prefix backend",
-    "dev": "npm run dev --prefix backend"
+    "dev": "npm run dev --prefix backend",
+    "sync:pages": "powershell -ExecutionPolicy Bypass -File scripts/sync-pages-root.ps1"
   }
 }

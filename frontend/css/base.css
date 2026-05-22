@@ -1,0 +1,54 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+.container {
+  width: min(100% - 2rem, var(--max-width));
+  margin-inline: auto;
+  padding-block: 2rem;
+}
+
+.site-header {
+  text-align: center;
+  padding-block: 2.5rem 1rem;
+}
+
+.site-header h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin: 0 0 0.5rem;
+}
+
+.site-header p {
+  color: var(--color-muted);
+  max-width: 42ch;
+  margin: 0 auto;
+}
+
+.hidden {
+  display: none !important;
+}

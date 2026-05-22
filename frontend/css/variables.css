@@ -1,0 +1,16 @@
+:root {
+  --color-bg: #0f1419;
+  --color-surface: #1a2332;
+  --color-surface-2: #243044;
+  --color-border: #2d3f56;
+  --color-text: #e8eef4;
+  --color-muted: #8fa3b8;
+  --color-accent: #3dd68c;
+  --color-accent-dim: #2a9d63;
+  --color-warm: #f4a261;
+  --color-danger: #e76f6f;
+  --font-sans: 'Segoe UI', system-ui, sans-serif;
+  --radius: 12px;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --max-width: 960px;
+}

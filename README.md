@@ -4,16 +4,26 @@ Aplicación web para generar un **plan de dieta** y un **plan de ejercicio** a p
 
 **Demo online:** [https://ionut5251.github.io/dietaweb/](https://ionut5251.github.io/dietaweb/)
 
+## Documentación del proyecto (Obsidian)
+
+Toda la lógica, estado y mapa de archivos viven en la bóveda **`dietas/`**.
+
+- **Para IA sin contexto:** abre `dietas/00 - Inicio/CONTEXTO-IA.md`
+- **Índice:** `dietas/00 - Inicio/Home.md`
+- **Al cambiar código:** sigue `dietas/06 - Operaciones/Protocolo de cambios.md`
+
 ## Estructura del proyecto
 
 ```
 web dieta/
 ├── README.md
-├── package.json
+├── AGENTS.md                 ← Puntero para IAs
+├── dietas/                   ← Bóveda Obsidian (documentación maestra)
 ├── shared/                   ← Lógica compartida (dieta + ejercicio)
 ├── backend/                  ← API Express (desarrollo local)
-├── frontend/                 ← Interfaz web
-├── docs/GITHUB.md            ← Guía Git + GitHub Pages
+├── frontend/                 ← Interfaz web (fuente UI)
+├── index.html, css/, js/     ← Copia para GitHub Pages (sync)
+├── docs/GITHUB.md            ← Guía Git resumida
 └── .github/workflows/        ← Despliegue automático al hacer push
 ```
 

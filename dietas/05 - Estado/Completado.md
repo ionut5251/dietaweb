@@ -25,6 +25,8 @@ Lista de lo **ya implementado y desplegado**. Actualizar al cerrar tareas.
 - [x] Tres modos de plan (dieta / gym / completo) → [[Personalizacion y modos]]
 - [x] Personalización por texto «Qué buscas mejorar»
 - [x] Objetivo recomposición corporal
+- [x] Integración OpenAI GPT-4o-mini + GPT-4o visión → [[Integracion IA OpenAI]]
+- [x] Cloudflare Worker proxy (Pages) + API `/analyze-photo` preparada
 
 ## Documentación
 

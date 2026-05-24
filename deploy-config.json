@@ -1,0 +1,10 @@
+{
+  "aiEnabled": false,
+  "aiProxyUrl": "",
+  "aiProvider": "openai",
+  "aiModels": {
+    "text": "gpt-4o-mini",
+    "vision": "gpt-4o"
+  },
+  "_comment": "Tras desplegar Cloudflare Worker, pon aiEnabled: true y la URL del worker en aiProxyUrl"
+}

@@ -46,6 +46,13 @@ git push
 
 La web en GitHub Pages se actualiza sola en 1–2 minutos. Guía detallada: [docs/GITHUB.md](docs/GITHUB.md)
 
+## IA profesional (OpenAI)
+
+- **Texto:** GPT-4o-mini refina dietas y rutinas según «Qué buscas mejorar»
+- **Fotos (futuro):** GPT-4o analiza progreso corporal
+- **Local:** `backend/.env` con `OPENAI_API_KEY` (ver `backend/.env.example`)
+- **GitHub Pages:** despliega Cloudflare Worker → [cloudflare/ai-proxy/README.md](cloudflare/ai-proxy/README.md) → activa `deploy-config.json`
+
 ## Datos del formulario
 
 | Campo | Uso |

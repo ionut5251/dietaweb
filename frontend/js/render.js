@@ -70,9 +70,9 @@ function renderDietCalendar(planMensual) {
   `;
 }
 
-export function renderPersonalization(pers, modoLabel) {
+export function renderPersonalization(pers, modoLabel, aiEnhanced = false) {
   return `
-    <h2>Plan generado: ${modoLabel}</h2>
+    <h2>Plan generado: ${modoLabel}${aiEnhanced ? ' <span class="ai-badge">✦ Optimizado con IA profesional</span>' : ''}</h2>
     <p><strong>Enfoque detectado:</strong> ${pers.label}</p>
     <p class="hint">${pers.interpretacion}</p>
     ${pers.textoOriginal ? `<p class="hint">Basado en: «${pers.textoOriginal}»</p>` : ''}
@@ -108,6 +108,8 @@ export function renderDiet(plan) {
       </div>
       <h3>Reglas generales</h3>
       <ul class="rules-list">${reglasGenerales.map((r) => `<li>${r}</li>`).join('')}</ul>
+      ${plan.consejosSemanalesProfesional ? `<h3>Consejos semanales (entrenador/dietista IA)</h3><ul class="rules-list">${plan.consejosSemanalesProfesional.map((c) => `<li>${c}</li>`).join('')}</ul>` : ''}
+      ${resumen.notaMacrosProfesional ? `<p class="hint"><strong>Macros:</strong> ${resumen.notaMacrosProfesional}</p>` : ''}
       ${renderDietCalendar(planMensual)}
       <h3>Lista de la compra (orientativa)</h3>
       <ul class="rules-list">
@@ -140,7 +142,7 @@ function renderExerciseItem(e, semanaNum, sesionIdx) {
 
   return `
     <li>
-      <strong>${e.nombre}</strong>
+      <strong>${e.nombre}</strong>${e.ajustadoPorIA ? ' <span class="ai-badge-small">IA</span>' : ''}
       <span class="hint"> · ${e.enfoque} · ${e.varianteUsada}</span>
       <br>${e.series} series × ${e.repeticiones} reps, descanso ${e.descanso}
       <br><span class="hint">${e.como}</span>
@@ -157,6 +159,7 @@ function renderWeekAccordion(semana) {
     <article class="session-card">
       <h4>${s.diaSemana ? s.diaSemana + ' — ' : ''}${s.dia}</h4>
       <p class="hint">${s.enfoque} · ${s.duracionEstimada}</p>
+      ${s.notaEntrenador ? `<p class="trainer-note"><strong>Nota del entrenador:</strong> ${s.notaEntrenador}</p>` : ''}
       <p><strong>Calentamiento:</strong> ${s.calentamiento}</p>
       <ul class="exercise-list">
         ${s.ejercicios.map((e) => renderExerciseItem(e, semana.numero, sesionIdx)).join('')}

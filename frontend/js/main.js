@@ -168,7 +168,11 @@ function renderResults(result) {
 
   const banner = document.getElementById('personalization-banner');
   if (result.personalizacion?.detectado || result.personalizacion?.textoOriginal) {
-    banner.innerHTML = renderPersonalization(result.personalizacion, result.modoLabel);
+    banner.innerHTML = renderPersonalization(
+      result.personalizacion,
+      result.modoLabel,
+      result.aiEnhanced,
+    );
     banner.classList.remove('hidden');
   } else {
     banner.classList.add('hidden');
@@ -212,6 +216,12 @@ form.addEventListener('submit', async (e) => {
 
   try {
     const payload = getFormPayload();
+    const hasAiHint =
+      payload.queBuscaMejorar?.length > 5 ||
+      payload.restriccionesAlimentarias ||
+      payload.lesionesLimitaciones;
+    if (hasAiHint) submitBtn.textContent = 'Generando plan (reglas + IA profesional)…';
+
     const result = await generatePlan(payload);
 
     setPlanId(`plan-${Date.now()}-${result.modo}`);

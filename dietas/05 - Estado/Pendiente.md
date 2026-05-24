@@ -18,8 +18,8 @@ Ideas y deuda técnica **no empezadas** o aplazadas. Priorizar desde [[Roadmap]]
 
 ## Infra
 
-- [ ] Backend opcional en Render/Railway (solo si se deja de usar motor en cliente)
-- [ ] Dominio personalizado para Pages
+- [ ] Backend hospedado en cloud (Render/VPS) — migrar desde Worker
+- [ ] UI cuentas + subida foto semanal → usar `analyze-photo` (GPT-4o)
 
 ---
 Al completar: mover ítem a [[Completado]] y marcar en [[Roadmap]].

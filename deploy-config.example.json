@@ -1,0 +1,9 @@
+{
+  "aiEnabled": false,
+  "aiProxyUrl": "https://TU-WORKER.tu-subdominio.workers.dev",
+  "aiProvider": "openai",
+  "aiModels": {
+    "text": "gpt-4o-mini",
+    "vision": "gpt-4o"
+  }
+}

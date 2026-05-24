@@ -1,5 +1,5 @@
 import { fetchOptions, generatePlan } from './api.js';
-import { renderProfile, renderDiet, renderExercise, renderPersonalization } from './render.js';
+import { renderProfile, renderDiet, renderExercise, renderPersonalization, renderAiNotice } from './render.js';
 import { bindPlanInteractions } from './interactions.js';
 import { setPlanId } from './tracking.js';
 
@@ -167,7 +167,10 @@ function renderResults(result) {
   const hasEjercicio = Boolean(result.planEjercicio);
 
   const banner = document.getElementById('personalization-banner');
-  if (result.personalizacion?.detectado || result.personalizacion?.textoOriginal) {
+  const aiNotice = document.getElementById('ai-notice-container');
+  aiNotice.innerHTML = renderAiNotice(result);
+
+  if (result.personalizacion?.detectado || result.personalizacion?.textoOriginal || result.modoLabel) {
     banner.innerHTML = renderPersonalization(
       result.personalizacion,
       result.modoLabel,

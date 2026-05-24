@@ -1,4 +1,4 @@
-import { mergeAiEnhancement } from '../../shared/ai/mergeEnhancement.js';
+import { mergeAiEnhancement, humanizeAiError } from '../../shared/ai/mergeEnhancement.js';
 import { enhancePlanWithOpenAI, isAiConfigured } from './openaiService.js';
 
 export { isAiConfigured };
@@ -11,7 +11,9 @@ export async function enhancePlanIfAvailable(input, basePlan) {
   const hasPersonalization =
     (input.queBuscaMejorar && input.queBuscaMejorar.length > 3) ||
     input.restriccionesAlimentarias ||
-    input.lesionesLimitaciones;
+    input.lesionesLimitaciones ||
+    input.modo === 'ejercicio' ||
+    input.modo === 'completo';
 
   if (!hasPersonalization) {
     return { plan: basePlan, aiEnhanced: false, aiAvailable: true, skipped: true };
@@ -25,7 +27,8 @@ export async function enhancePlanIfAvailable(input, basePlan) {
     const plan = mergeAiEnhancement(basePlan, aiJson, input);
     return { plan, aiEnhanced: true, aiAvailable: true };
   } catch (err) {
-    console.error('[AI]', err.message);
-    return { plan: basePlan, aiEnhanced: false, aiAvailable: true, error: err.message };
+    const friendly = humanizeAiError(err.message);
+    console.error('[AI]', friendly);
+    return { plan: basePlan, aiEnhanced: false, aiAvailable: true, error: friendly };
   }
 }

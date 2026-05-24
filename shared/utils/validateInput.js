@@ -1,5 +1,6 @@
 import { ACTIVITY_FACTORS, GOALS, LIMITS, PLAN_MODES } from '../config/constants.js';
 import { parsePersonalization } from '../services/personalizationEngine.js';
+import { applyIntensityToInput } from '../services/advancedWorkoutTemplates.js';
 
 const EXPERIENCE = ['principiante', 'intermedio', 'avanzado'];
 const MODES = Object.keys(PLAN_MODES);
@@ -75,9 +76,7 @@ export function validatePlanInput(body) {
 
   const personalizacion = parsePersonalization(queBuscaMejorar, body.sexo);
 
-  return {
-    ok: true,
-    data: {
+  const baseData = {
       modo,
       sexo: body.sexo,
       pesoKg: peso,
@@ -92,6 +91,14 @@ export function validatePlanInput(body) {
       personalizacion,
       restriccionesAlimentarias: includesDieta ? (body.restriccionesAlimentarias || '').trim() : '',
       lesionesLimitaciones: includesEjercicio ? (body.lesionesLimitaciones || '').trim() : '',
-    },
+    };
+
+  const data = includesEjercicio
+    ? applyIntensityToInput({ ...baseData, experiencia: baseData.experiencia || 'intermedio' })
+    : { ...baseData, intensityProfile: 'estandar' };
+
+  return {
+    ok: true,
+    data,
   };
 }

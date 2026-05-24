@@ -44,7 +44,12 @@ async function enhancePlanWithAi(input, basePlan) {
   const data = await res.json();
   if (!res.ok) {
     console.warn('[AI]', data.error);
-    return { ...basePlan, aiEnhanced: false, aiError: data.error };
+    const { humanizeAiError } = await loadShared('ai/mergeEnhancement.js');
+    return {
+      ...basePlan,
+      aiEnhanced: false,
+      aiError: humanizeAiError(data.error),
+    };
   }
 
   const { mergeAiEnhancement } = await loadShared('ai/mergeEnhancement.js');
@@ -78,7 +83,11 @@ export async function generatePlan(formData) {
 
     if (shouldAi) {
       const enhanced = await enhancePlanWithAi(basePlan.datosUsuario, basePlan);
-      return { ...enhanced, aiAvailable: true };
+      return {
+        ...enhanced,
+        aiAvailable: true,
+        aiError: enhanced.aiError || null,
+      };
     }
 
     return { ...basePlan, aiEnhanced: false, aiAvailable: isAiEnabled() };

@@ -143,13 +143,31 @@ function renderExerciseItem(e, semanaNum, sesionIdx) {
   return `
     <li>
       <strong>${e.nombre}</strong>${e.ajustadoPorIA ? ' <span class="ai-badge-small">IA</span>' : ''}
-      <span class="hint"> · ${e.enfoque} · ${e.varianteUsada}</span>
-      <br>${e.series} series × ${e.repeticiones} reps, descanso ${e.descanso}
+      <span class="hint"> · ${e.enfoque}${e.varianteUsada ? ` · ${e.varianteUsada}` : ''}</span>
+      <br>${e.series === '1' && String(e.repeticiones).includes('min') ? `${e.repeticiones}` : `${e.series} series × ${e.repeticiones} reps, descanso ${e.descanso}`}
       <br><span class="hint">${e.como}</span>
       ${e.notas ? `<br><span class="hint">${e.notas}</span>` : ''}
       ${weightField}
     </li>
   `;
+}
+
+function renderSessionExercises(s, semanaNum, sesionIdx) {
+  if (s.bloques?.length) {
+    return s.bloques
+      .map(
+        (bloque) => `
+      <div class="exercise-block">
+        <h5 class="exercise-block-title">${bloque.nombre}</h5>
+        <ul class="exercise-list">
+          ${bloque.ejercicios.map((e) => renderExerciseItem(e, semanaNum, sesionIdx)).join('')}
+        </ul>
+      </div>
+    `,
+      )
+      .join('');
+  }
+  return `<ul class="exercise-list">${s.ejercicios.map((e) => renderExerciseItem(e, semanaNum, sesionIdx)).join('')}</ul>`;
 }
 
 function renderWeekAccordion(semana) {
@@ -161,9 +179,7 @@ function renderWeekAccordion(semana) {
       <p class="hint">${s.enfoque} · ${s.duracionEstimada}</p>
       ${s.notaEntrenador ? `<p class="trainer-note"><strong>Nota del entrenador:</strong> ${s.notaEntrenador}</p>` : ''}
       <p><strong>Calentamiento:</strong> ${s.calentamiento}</p>
-      <ul class="exercise-list">
-        ${s.ejercicios.map((e) => renderExerciseItem(e, semana.numero, sesionIdx)).join('')}
-      </ul>
+      ${renderSessionExercises(s, semana.numero, sesionIdx)}
       <p><strong>Enfriamiento:</strong> ${s.enfriamiento}</p>
     </article>
   `,
@@ -185,6 +201,16 @@ function renderWeekAccordion(semana) {
   `;
 }
 
+export function renderAiNotice(result) {
+  if (result.aiEnhanced) {
+    return `<div class="ai-notice ai-notice-ok">Plan refinado con IA profesional (OpenAI).</div>`;
+  }
+  if (result.aiError) {
+    return `<div class="ai-notice ai-notice-warn">${result.aiError}</div>`;
+  }
+  return '';
+}
+
 export function renderExercise(plan) {
   const { resumen, principios, semanas, descansoEntreSesiones } = plan;
 
@@ -195,6 +221,7 @@ export function renderExercise(plan) {
         <span class="stat-pill">${resumen.diasPorSemana} días/semana</span>
         <span class="stat-pill">Nivel: <strong>${resumen.nivelLabel}</strong></span>
         ${resumen.enfoquePersonalizado ? `<span class="stat-pill">Enfoque: <strong>${resumen.enfoquePersonalizado}</strong></span>` : ''}
+        ${resumen.esRutinaAvanzada ? '<span class="stat-pill">Rutina <strong>avanzada</strong></span>' : ''}
       </div>
       <p class="hint">${resumen.cardioExtra}</p>
       <p class="hint"><strong>Rotación:</strong> ${resumen.rotacion}</p>

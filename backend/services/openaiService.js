@@ -1,5 +1,5 @@
-import { buildEnhancePlanPrompt, buildPhotoAnalysisPrompt, AI_MODELS } from '../../shared/ai/prompts.js';
-import { parseAiJson } from '../../shared/ai/mergeEnhancement.js';
+import { buildEnhancePlanPrompt, buildPhotoAnalysisPrompt, AI_MODELS, getEnhanceMaxTokens } from '../../shared/ai/prompts.js';
+import { parseAiJson, humanizeAiError } from '../../shared/ai/mergeEnhancement.js';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -39,17 +39,20 @@ export async function enhancePlanWithOpenAI(input, basePlan) {
   const prompt = buildEnhancePlanPrompt(input, basePlan);
   const content = await chatCompletion({
     model: AI_MODELS.text,
+    maxTokens: getEnhanceMaxTokens(basePlan),
     messages: [
       {
         role: 'system',
         content:
-          'Eres dietista y entrenador personal. Respondes únicamente JSON válido en español.',
+          'Eres entrenador personal y dietista de elite en España. Respondes únicamente JSON válido. Rutinas con volumen profesional real.',
       },
       { role: 'user', content: prompt },
     ],
   });
   return parseAiJson(content);
 }
+
+export { humanizeAiError };
 
 export async function analyzeProgressPhotoWithOpenAI({ imageBase64, mimeType, context }) {
   const prompt = buildPhotoAnalysisPrompt(context);

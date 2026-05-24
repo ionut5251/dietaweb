@@ -1,5 +1,6 @@
 {
-  "aiEnabled": false,
+  "aiEnabled": true,
+  "aiProxyUrl": "https://dietaweb-ai.elico.workers.dev",
   "aiProxyUrl": "",
   "aiProvider": "openai",
   "aiModels": {

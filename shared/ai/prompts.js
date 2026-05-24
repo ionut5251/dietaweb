@@ -1,10 +1,9 @@
 /**
- * Prompts para OpenAI (GPT-4o / GPT-4o-mini).
- * Respuestas en JSON estricto para fusionar con el plan base generado por reglas.
+ * Prompts para OpenAI — estilo entrenador/dietista profesional.
  */
 
 export function buildEnhancePlanPrompt(input, basePlan) {
-  const resumen = {
+  const cliente = {
     modo: input.modo,
     sexo: input.sexo,
     edad: input.edad,
@@ -18,73 +17,94 @@ export function buildEnhancePlanPrompt(input, basePlan) {
     restricciones: input.restriccionesAlimentarias,
     lesiones: input.lesionesLimitaciones,
     experiencia: input.experiencia,
+    intensityProfile: input.intensityProfile,
   };
 
-  const dietaResumen = basePlan.planDieta
-    ? {
-        calorias: basePlan.perfil?.calorias,
-        macros: basePlan.planDieta.resumen?.macros,
-        reglasActuales: basePlan.planDieta.reglasGenerales?.slice(0, 5),
-        ejemploDia1: basePlan.planDieta.planMensual?.semanas?.[0]?.dias?.[0]?.comidas?.map((c) => c.plato),
-      }
-    : null;
+  const esquemaSemana = basePlan.planEjercicio?.semanas?.[0]?.sesiones?.map((s, i) => ({
+    indiceSesion: i,
+    dia: s.dia,
+    enfoque: s.enfoque,
+    ejerciciosActuales: s.ejercicios?.slice(0, 8).map((e) => e.nombre),
+    tieneBloques: Boolean(s.bloques?.length),
+  }));
 
-  const ejercicioResumen = basePlan.planEjercicio
-    ? {
-        diasSemana: basePlan.planEjercicio.resumen?.diasPorSemana,
-        semana1Sesiones: basePlan.planEjercicio.semanas?.[0]?.sesiones?.map((s) => ({
-          dia: s.dia,
-          enfoque: s.enfoque,
-          ejercicios: s.ejercicios?.map((e) => e.nombre),
-        })),
-      }
-    : null;
+  return `Eres un entrenador personal de élite y dietista-nutricionista (estilo profesional español, directo, sin humo).
+Tu cliente quiere una rutina BUENA — no genérica. Volumen real, series×reps concretas, bloques (Principal / Core / Cardio / Finisher / HIIT).
 
-  return `Eres un dietista-nutricionista y entrenador personal colegiado. Adapta el plan BASE a las necesidades específicas del cliente.
+CLIENTE:
+${JSON.stringify(cliente, null, 2)}
 
-DATOS CLIENTE:
-${JSON.stringify(resumen, null, 2)}
+ESQUEMA SEMANAL ACTUAL (sem. 1):
+${JSON.stringify(esquemaSemana, null, 2)}
 
-PLAN BASE (generado automáticamente — debes REFINARLO, no reescribirlo entero):
-${JSON.stringify({ dieta: dietaResumen, ejercicio: ejercicioResumen }, null, 2)}
+REGLAS CRÍTICAS:
+1. Interpreta «qué buscas mejorar» al detalle (metabólico, piernas, fútbol, influencer fitness, etc.). NO copies influencers literalmente ni prometas resultados irreales.
+2. Si pide rutina avanzada/metabólica: mínimo 6-8 ejercicios en bloque Principal + bloque Core + Cardio o Finisher cuando encaje.
+3. Formato profesional: "Press banca → 4×8-10 (subida explosiva)".
+4. Reparte la intensidad según días/semana (${input.diasEntrenoSemana} días).
+5. Dieta: reglas específicas según objetivo + texto del cliente.
+6. Lesiones: adapta ejercicios si las hay.
+7. Solo JSON válido en español.
 
-INSTRUCCIONES:
-1. Interpreta «qué buscas mejorar» como un profesional (fútbol, glúteos, recomposición, etc.).
-2. Dieta: añade reglas prácticas, timing nutricional si hay deporte, consejos específicos por sexo/objetivo.
-3. Ejercicio: sugiere sustituciones concretas de ejercicios en sesiones concretas (índices 0-based) y ejercicios extra si procede.
-4. Tono claro para cualquier persona, en español de España.
-5. NO inventes enfermedades ni diagnósticos médicos. Aviso: orientativo.
-6. Responde SOLO JSON válido con esta estructura exacta:
-
+ESTRUCTURA JSON OBLIGATORIA:
 {
-  "interpretacionProfesional": "2-4 frases resumiendo lo que entendiste y la estrategia",
-  "enfoquePrincipal": "etiqueta corta ej. Fútbol + piernas",
+  "interpretacionProfesional": "3-5 frases: estrategia como entrenador",
+  "enfoquePrincipal": "etiqueta corta",
   "dieta": {
-    "reglasAdicionales": ["máx 6 reglas nuevas específicas"],
-    "notaMacros": "1 frase sobre calorías/macros si aplica",
-    "consejosSemanales": ["máx 4 consejos rotativos"]
+    "reglasAdicionales": ["hasta 6"],
+    "notaMacros": "string o null",
+    "consejosSemanales": ["hasta 4"]
   },
   "ejercicio": {
-    "principiosAdicionales": ["máx 5 principios de entrenador"],
-    "modificacionesSesion": [
+    "principiosAdicionales": ["hasta 5"],
+    "cardioRecomendacion": "string",
+    "sesionesCompletas": [
       {
         "semana": 1,
         "indiceSesion": 0,
-        "notaEntrenador": "consejo para esa sesión",
-        "ejerciciosSustitutos": [
-          { "indiceEjercicio": 0, "nombre": "nombre", "como": "técnica breve", "motivo": "por qué" }
-        ],
-        "ejerciciosExtra": [
-          { "nombre": "nombre", "como": "técnica", "series": "3", "repeticiones": "10-12", "enfoque": "músculo" }
+        "titulo": "LUNES – PECHO + HOMBRO + CORE",
+        "notaEntrenador": "consejo de sesión",
+        "bloques": [
+          {
+            "nombre": "Principal",
+            "ejercicios": [
+              {
+                "nombre": "Press banca",
+                "series": "4",
+                "repeticiones": "8-10",
+                "descanso": "90-120 s",
+                "como": "subida explosiva controlada",
+                "enfoque": "Pecho",
+                "registrarPeso": true
+              }
+            ]
+          },
+          {
+            "nombre": "Core",
+            "ejercicios": []
+          },
+          {
+            "nombre": "Cardio",
+            "ejercicios": [
+              {
+                "nombre": "Cinta inclinada",
+                "series": "1",
+                "repeticiones": "15-20 min",
+                "descanso": "—",
+                "como": "8-12% inclinación",
+                "enfoque": "Cardio",
+                "registrarPeso": false
+              }
+            ]
+          }
         ]
       }
-    ],
-    "cardioRecomendacion": "1-2 frases"
+    ]
   }
 }
 
-Si no hay plan de dieta, deja "dieta" con arrays vacíos y notaMacros null.
-Si no hay plan de ejercicio, deja "ejercicio" con arrays vacíos.`;
+IMPORTANTE: sesionesCompletas debe incluir UNA entrada por cada sesión de la semana 1 (${input.diasEntrenoSemana} sesiones, indices 0 a ${input.diasEntrenoSemana - 1}).
+Si no hay plan de dieta, dieta con arrays vacíos. Si no hay ejercicio, ejercicio vacío.`;
 }
 
 export function buildPhotoAnalysisPrompt(context) {
@@ -104,12 +124,14 @@ Responde SOLO JSON:
   "recomendaciones": ["3-5 acciones concretas dieta/entreno"],
   "mensajeMotivacional": "1 frase breve",
   "aviso": "Esta valoración es orientativa y no sustituye evaluación médica."
-}
-
-Sé específico pero prudente. Si la imagen no permite valorar, dilo en observaciones.`;
+}`;
 }
 
 export const AI_MODELS = {
   text: 'gpt-4o-mini',
   vision: 'gpt-4o',
 };
+
+export function getEnhanceMaxTokens(basePlan) {
+  return basePlan.planEjercicio ? 7500 : 2500;
+}

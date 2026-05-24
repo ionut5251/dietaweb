@@ -1,6 +1,7 @@
 {
   "name": "web-dieta",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "Generador de planes de dieta y ejercicio para invitados",
   "scripts": {

@@ -1,3 +1,5 @@
+import { buildAdvancedSplit } from './advancedWorkoutTemplates.js';
+
 const EXPERIENCE_LEVEL = {
   principiante: { series: 3, reps: '10-12', descanso: '60-90 s' },
   intermedio: { series: 4, reps: '8-12', descanso: '60-90 s' },
@@ -275,32 +277,95 @@ function buildSesiones(template, nivel, dias, bloque) {
   }));
 }
 
+function mapAdvancedExercise(e, sessionIdx, bloqueIdx, ejIdx, bloqueNombre) {
+  return {
+    id: `adv-s${sessionIdx}-b${bloqueIdx}-e${ejIdx}`,
+    enfoque: e.enfoque,
+    nombre: e.nombre,
+    como: e.como,
+    notas: e.notas || '',
+    series: String(e.series),
+    repeticiones: e.repeticiones,
+    descanso: e.descanso || '90-120 s',
+    varianteUsada: bloqueNombre,
+    registrarPeso: e.registrarPeso !== false,
+    bloque: bloqueNombre,
+  };
+}
+
+function buildAdvancedSesiones(advancedTemplate, dias) {
+  return advancedTemplate.map((t, idx) => {
+    const bloques = t.bloques.map((b, bi) => ({
+      nombre: b.nombre,
+      ejercicios: b.ejercicios.map((e, ei) => mapAdvancedExercise(e, idx, bi, ei, b.nombre)),
+    }));
+    const ejercicios = bloques.flatMap((b) => b.ejercicios);
+    return {
+      dia: t.dia,
+      enfoque: t.enfoque,
+      duracionEstimada: '60-75 min',
+      calentamiento: '8-10 min: movilidad articular, activación y 2 series progresivas del primer lift.',
+      bloques,
+      ejercicios,
+      enfriamiento: '5-8 min estiramientos de músculos trabajados + respiración.',
+      diaSemana: suggestWeekday(idx, dias),
+      esAvanzada: true,
+    };
+  });
+}
+
+function usesAdvancedTemplate(input) {
+  const profile = input.intensityProfile;
+  return (
+    profile === 'avanzado' ||
+    profile === 'avanzado_metabolico' ||
+    profile === 'metabolico' ||
+    input.experiencia === 'avanzado'
+  );
+}
+
 export function generateExercisePlan(input) {
   const dias = input.diasEntrenoSemana;
   const nivel = EXPERIENCE_LEVEL[input.experiencia] ?? EXPERIENCE_LEVEL.principiante;
   const focus = resolveFocus(input.personalizacion);
-  let template = SPLIT_TEMPLATES[dias] ?? SPLIT_TEMPLATES[3];
-  template = applyPersonalizationToTemplate(template, focus);
+  const advanced = usesAdvancedTemplate(input);
+  const metabolic =
+    input.intensityProfile === 'avanzado_metabolico' || input.intensityProfile === 'metabolico';
+
+  let buildWeekSessions;
+  if (advanced && (dias === 4 || dias === 5)) {
+    const advTpl = buildAdvancedSplit(dias, metabolic);
+    buildWeekSessions = () => buildAdvancedSesiones(advTpl, dias);
+  } else {
+    let template = SPLIT_TEMPLATES[dias] ?? SPLIT_TEMPLATES[3];
+    template = applyPersonalizationToTemplate(template, focus);
+    buildWeekSessions = (bloque) => buildSesiones(template, nivel, dias, bloque);
+  }
 
   const semanas = [1, 2, 3, 4].map((num) => {
     const bloque = num <= 2 ? 'A' : 'B';
+    const sesiones = advanced && (dias === 4 || dias === 5)
+      ? buildWeekSessions()
+      : buildWeekSessions(bloque);
     return {
       numero: num,
       label: `Semana ${num}`,
       bloque,
-      bloqueDescripcion:
-        bloque === 'A'
+      bloqueDescripcion: advanced
+        ? 'Rutina avanzada: semanas 1-2 intensidad base; semanas 3-4 sube 5-10 % peso o 1-2 reps por serie.'
+        : bloque === 'A'
           ? 'Bloque A: mismos grupos musculares, variante 1 (semanas 1 y 2).'
           : 'Bloque B: mismo enfoque, variante 2 para evitar monotonía (semanas 3 y 4).',
-      sesiones: buildSesiones(template, nivel, dias, bloque),
+      sesiones,
     };
   });
 
-  const cardioExtra =
-    focus === 'futbol'
-      ? 'Complementa con 1 sesión de carrera continua suave o partido recreativo. Descansa 48 h antes de partido intenso si entrenas pierna fuerte.'
+  const cardioExtra = advanced
+    ? 'Sesión exigente: prioriza sueño, comida pre/post entreno e hidratación. Descansa mínimo 48 h entre piernas.'
+    : focus === 'futbol'
+      ? 'Complementa con 1 sesión de carrera continua suave o partido recreativo.'
       : input.objetivo === 'perder_grasa'
-        ? 'Añade 2 sesiones de 20-30 min cardio suave en días sin fuerza (caminar rápido).'
+        ? 'Añade 2 sesiones de 20-30 min cardio suave en días sin fuerza.'
         : 'Opcional: 1 sesión cardio ligero para salud cardiovascular.';
 
   const principios = [
@@ -310,6 +375,12 @@ export function generateExercisePlan(input) {
     'Duerme 7-9 h; el músculo crece con descanso y nutrición.',
     'Si hay dolor articular agudo, para y consulta a un profesional.',
   ];
+
+  if (advanced) {
+    principios.unshift(
+      'Rutina de nivel avanzado: volumen alto. Si eres intermedio, baja series un 25 % las primeras 2 semanas.',
+    );
+  }
 
   if (input.personalizacion?.detectado) {
     principios.unshift(`Rutina adaptada a: ${input.personalizacion.label}.`);
@@ -325,9 +396,12 @@ export function generateExercisePlan(input) {
       objetivo: input.objetivo,
       enfoquePersonalizado: input.personalizacion?.label || null,
       focusTecnico: focus,
+      intensityProfile: input.intensityProfile || 'estandar',
+      esRutinaAvanzada: advanced && (dias === 4 || dias === 5),
       cardioExtra,
-      rotacion:
-        'Cada 2 semanas cambia la variante del ejercicio (mismo músculo, distinta forma). Semanas 1-2 bloque A; semanas 3-4 bloque B.',
+      rotacion: advanced
+        ? 'Semanas 3-4: mismo esquema, más carga o más densidad (menos descanso).'
+        : 'Cada 2 semanas cambia la variante del ejercicio. Semanas 1-2 bloque A; semanas 3-4 bloque B.',
     },
     principios,
     semanas,

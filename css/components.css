@@ -473,3 +473,32 @@ textarea {
   border-radius: 4px;
   font-size: 0.875rem;
 }
+
+.exercise-block {
+  margin: 0.75rem 0 1rem;
+}
+
+.exercise-block-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-warm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-notice {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.ai-notice-ok {
+  background: rgba(61, 214, 140, 0.12);
+  border: 1px solid var(--color-accent-dim);
+}
+
+.ai-notice-warn {
+  background: rgba(244, 162, 97, 0.15);
+  border: 1px solid var(--color-warm);
+}

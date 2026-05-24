@@ -66,15 +66,39 @@ export function generateDietPlan(input, targets) {
   const perMeal = distributeMacros(targets, numMeals);
   const semanas = buildMonthlyWeeks(slots, perMeal, targets.objetivoLabel);
   const hidratacionMl = Math.round(input.pesoKg * 35);
+  const pers = input.personalizacion;
 
   const todosPlatos = new Set();
   semanas.forEach((s) =>
     s.dias.forEach((d) => d.comidas.forEach((c) => todosPlatos.add(c.plato))),
   );
 
+  const reglasGenerales = [
+    'Plan mensual: cada semana repite la estructura de 7 días con menús distintos para no aburrirte.',
+    'Puedes intercambiar comidas del mismo tipo (ej. dos cenas de pescado) si un día no te apetece ese plato.',
+    'Prioriza alimentos reales: verdura, proteína magra, legumbres, cereales integrales.',
+    'Cocina con poca sal; usa especias, limón y hierbas.',
+    'Este plan es orientativo: consulta a un dietista si tienes patologías o embarazo.',
+  ];
+
+  if (pers?.detectado) {
+    reglasGenerales.unshift(`Enfoque personalizado: ${pers.label}.`);
+    if (pers.interpretacion) {
+      reglasGenerales.push(pers.interpretacion);
+    }
+    pers.dietTips.forEach((tip) => reglasGenerales.push(tip));
+  }
+
+  if (input.objetivo === 'recomposicion_corporal') {
+    reglasGenerales.push(
+      'Recomposición: déficit ligero + proteína alta. Prioriza fuerza en el gym y paciencia (semanas, no días).',
+    );
+  }
+
   return {
     resumen: {
       objetivo: targets.objetivoLabel,
+      enfoquePersonalizado: pers?.label || null,
       caloriasDiarias: targets.calorias,
       macros: {
         proteinas: `${targets.proteinasG} g`,
@@ -85,13 +109,7 @@ export function generateDietPlan(input, targets) {
       duracionSemanas: WEEKS_IN_PLAN,
       hidratacion: `${hidratacionMl} ml de agua al día (aprox.)`,
     },
-    reglasGenerales: [
-      'Plan mensual: cada semana repite la estructura de 7 días con menús distintos para no aburrirte.',
-      'Puedes intercambiar comidas del mismo tipo (ej. dos cenas de pescado) si un día no te apetece ese plato.',
-      'Prioriza alimentos reales: verdura, proteína magra, legumbres, cereales integrales.',
-      'Cocina con poca sal; usa especias, limón y hierbas.',
-      'Este plan es orientativo: consulta a un dietista si tienes patologías o embarazo.',
-    ],
+    reglasGenerales,
     planMensual: {
       semanas,
       nota:

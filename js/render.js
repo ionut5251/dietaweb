@@ -70,6 +70,15 @@ function renderDietCalendar(planMensual) {
   `;
 }
 
+export function renderPersonalization(pers, modoLabel) {
+  return `
+    <h2>Plan generado: ${modoLabel}</h2>
+    <p><strong>Enfoque detectado:</strong> ${pers.label}</p>
+    <p class="hint">${pers.interpretacion}</p>
+    ${pers.textoOriginal ? `<p class="hint">Basado en: «${pers.textoOriginal}»</p>` : ''}
+  `;
+}
+
 export function renderProfile(perfil, aviso) {
   const el = document.getElementById('profile-stats');
   el.innerHTML = `
@@ -93,6 +102,7 @@ export function renderDiet(plan) {
       <div class="stats-row">
         <span class="stat-pill">${resumen.duracionSemanas} semanas</span>
         <span class="stat-pill">${resumen.comidasAlDia} comidas/día</span>
+        ${resumen.enfoquePersonalizado ? `<span class="stat-pill">Enfoque: <strong>${resumen.enfoquePersonalizado}</strong></span>` : ''}
         <span class="stat-pill">Hidratación: <strong>${resumen.hidratacion}</strong></span>
         <span class="stat-pill">${listaCompraSemanal.totalPlatosUnicos ?? '—'} platos distintos en el mes</span>
       </div>
@@ -181,6 +191,7 @@ export function renderExercise(plan) {
       <div class="stats-row">
         <span class="stat-pill">${resumen.diasPorSemana} días/semana</span>
         <span class="stat-pill">Nivel: <strong>${resumen.nivelLabel}</strong></span>
+        ${resumen.enfoquePersonalizado ? `<span class="stat-pill">Enfoque: <strong>${resumen.enfoquePersonalizado}</strong></span>` : ''}
       </div>
       <p class="hint">${resumen.cardioExtra}</p>
       <p class="hint"><strong>Rotación:</strong> ${resumen.rotacion}</p>

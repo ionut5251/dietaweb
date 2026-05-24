@@ -170,6 +170,83 @@ function mobilitySlots() {
   ];
 }
 
+function footballLegSlots() {
+  return [
+    slot('sentadilla', 'Pierna — potencia', 'Sentadilla con barra', 'Sentadilla búlgara con mancuernas', 'Explosión controlada en la subida.', 'Pie trasero elevado, torso erguido.'),
+    slot('zancada_lateral', 'Pierna — estabilidad', 'Zancadas laterales con mancuerna', 'Skater squat al banco', 'Simula cambios de dirección en fútbol.', 'Paso lateral amplio, rodilla estable.'),
+    slot('puente_gluteo', 'Glúteo', 'Hip thrust con barra', 'Puente de glúteo a una pierna', 'Aprieta arriba 2 s.', 'Versión unilateral si domina la básica.'),
+    slot('gemelos', 'Gemelos', 'Elevación de talones de pie', 'Saltos de gemelo suaves', 'Prevención de lesiones en sprint.'),
+    slot('core_rotacion', 'Core', 'Plancha con rotación', 'Pallof press en polea', 'Estabilidad para gestos de torsión.', 'Resiste rotación, brazos extendidos.'),
+  ];
+}
+
+function gluteFocusedLegSlots() {
+  return [
+    slot('puente_gluteo', 'Glúteo', 'Hip thrust con barra', 'Abducción de cadera en máquina', 'Prioridad máxima en contracción de glúteo.'),
+    slot('sentadilla', 'Pierna', 'Sentadilla sumo con mancuerna', 'Sentadilla búlgara', 'Pies más abiertos para activar glúteo.', 'Paso largo, inclina torso ligero.'),
+    slot('peso_muerto', 'Cadena posterior', 'Peso muerto rumano', 'Patada de glúteo en polea', 'Siente estiramiento en isquios.', 'Cadera fija, no arquees lumbar.'),
+    slot('zancadas', 'Pierna', 'Zancadas búlgaras', 'Step-up alto al banco', 'Profundidad cómoda.', 'Empuja con talón delantero.'),
+    slot('core_lateral', 'Core', 'Plancha lateral con elevación de cadera', 'Clamshell con banda', 'Activa glúteo medio.', 'Rodillas flexionadas, banda en rodillas.'),
+  ];
+}
+
+function piernasIntensoSlots() {
+  return [
+    slot('sentadilla', 'Pierna', 'Sentadilla trasera', 'Prensa inclinada pies altos', 'Profundidad según movilidad.'),
+    slot('peso_muerto', 'Cadena posterior', 'Peso muerto rumano', 'Curl femoral tumbado', 'Control en excéntrica.'),
+    slot('zancadas', 'Pierna', 'Zancadas caminando', 'Hack squat o goblet profundo', 'Series largas posibles.'),
+    slot('gemelos', 'Gemelos', 'Gemelo en prensa', 'Gemelo de pie unilateral', 'Rango completo.'),
+  ];
+}
+
+function isLegSession(session) {
+  const t = `${session.dia} ${session.enfoque}`.toLowerCase();
+  return /pierna|leg|glúteo|gluteo|inferior|cuádriceps/.test(t);
+}
+
+function applyPersonalizationToTemplate(template, focus) {
+  if (focus === 'general') return template;
+
+  return template.map((session) => {
+    if (!isLegSession(session)) return session;
+
+    if (focus === 'futbol') {
+      return {
+        ...session,
+        dia: session.dia.replace(/Piernas?/i, 'Piernas — fútbol'),
+        enfoque: 'Potencia, estabilidad y resistencia para fútbol',
+        slots: footballLegSlots(),
+      };
+    }
+    if (focus === 'gluteos') {
+      return {
+        ...session,
+        dia: session.dia.replace(/Piernas?/i, 'Piernas y glúteos'),
+        enfoque: 'Prioridad glúteo + pierna',
+        slots: gluteFocusedLegSlots(),
+      };
+    }
+    if (focus === 'piernas') {
+      return {
+        ...session,
+        enfoque: 'Fuerza e hipertrofia de pierna',
+        slots: piernasIntensoSlots(),
+      };
+    }
+    return session;
+  });
+}
+
+function resolveFocus(personalizacion) {
+  if (!personalizacion) return 'general';
+  const f = personalizacion.exerciseFocus;
+  if (['futbol', 'gluteos', 'piernas'].includes(f)) return f;
+  if (personalizacion.etiquetas?.includes('futbol')) return 'futbol';
+  if (personalizacion.etiquetas?.includes('gluteos')) return 'gluteos';
+  if (personalizacion.etiquetas?.includes('piernas')) return 'piernas';
+  return 'general';
+}
+
 function resolveSlot(s, bloque, nivel, sessionIndex) {
   const variant = bloque === 'A' ? s.varianteA : s.varianteB;
   return {
@@ -201,7 +278,9 @@ function buildSesiones(template, nivel, dias, bloque) {
 export function generateExercisePlan(input) {
   const dias = input.diasEntrenoSemana;
   const nivel = EXPERIENCE_LEVEL[input.experiencia] ?? EXPERIENCE_LEVEL.principiante;
-  const template = SPLIT_TEMPLATES[dias] ?? SPLIT_TEMPLATES[3];
+  const focus = resolveFocus(input.personalizacion);
+  let template = SPLIT_TEMPLATES[dias] ?? SPLIT_TEMPLATES[3];
+  template = applyPersonalizationToTemplate(template, focus);
 
   const semanas = [1, 2, 3, 4].map((num) => {
     const bloque = num <= 2 ? 'A' : 'B';
@@ -218,9 +297,24 @@ export function generateExercisePlan(input) {
   });
 
   const cardioExtra =
-    input.objetivo === 'perder_grasa'
-      ? 'Añade 2 sesiones de 20-30 min cardio suave en días sin fuerza (caminar rápido).'
-      : 'Opcional: 1 sesión cardio ligero para salud cardiovascular.';
+    focus === 'futbol'
+      ? 'Complementa con 1 sesión de carrera continua suave o partido recreativo. Descansa 48 h antes de partido intenso si entrenas pierna fuerte.'
+      : input.objetivo === 'perder_grasa'
+        ? 'Añade 2 sesiones de 20-30 min cardio suave en días sin fuerza (caminar rápido).'
+        : 'Opcional: 1 sesión cardio ligero para salud cardiovascular.';
+
+  const principios = [
+    'Progresión: cuando completes el rango alto de repeticiones en todas las series, sube peso un 5-10 %.',
+    'Anota el peso usado en cada ejercicio para ver tu evolución semana a semana.',
+    'Técnica antes que peso: mejor 10 reps limpias que 15 mal hechas.',
+    'Duerme 7-9 h; el músculo crece con descanso y nutrición.',
+    'Si hay dolor articular agudo, para y consulta a un profesional.',
+  ];
+
+  if (input.personalizacion?.detectado) {
+    principios.unshift(`Rutina adaptada a: ${input.personalizacion.label}.`);
+    principios.push(input.personalizacion.interpretacion);
+  }
 
   return {
     resumen: {
@@ -229,17 +323,13 @@ export function generateExercisePlan(input) {
       experiencia: input.experiencia,
       nivelLabel: labelExperience(input.experiencia),
       objetivo: input.objetivo,
+      enfoquePersonalizado: input.personalizacion?.label || null,
+      focusTecnico: focus,
       cardioExtra,
       rotacion:
         'Cada 2 semanas cambia la variante del ejercicio (mismo músculo, distinta forma). Semanas 1-2 bloque A; semanas 3-4 bloque B.',
     },
-    principios: [
-      'Progresión: cuando completes el rango alto de repeticiones en todas las series, sube peso un 5-10 %.',
-      'Anota el peso usado en cada ejercicio para ver tu evolución semana a semana.',
-      'Técnica antes que peso: mejor 10 reps limpias que 15 mal hechas.',
-      'Duerme 7-9 h; el músculo crece con descanso y nutrición.',
-      'Si hay dolor articular agudo, para y consulta a un profesional.',
-    ],
+    principios,
     semanas,
     descansoEntreSesiones:
       dias >= 6

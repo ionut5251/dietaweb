@@ -22,7 +22,9 @@ Lista de lo **ya implementado y desplegado**. Actualizar al cerrar tareas.
 - [x] GitHub Pages funcionando con `index.html` en raíz + `.nojekyll`
 - [x] Workflow Actions `deploy-pages.yml`
 - [x] Script `npm run sync:pages`
-- [x] Bóveda Obsidian `dietas/` con red de notas
+- [x] Tres modos de plan (dieta / gym / completo) → [[Personalizacion y modos]]
+- [x] Personalización por texto «Qué buscas mejorar»
+- [x] Objetivo recomposición corporal
 
 ## Documentación
 

@@ -22,7 +22,7 @@
 |---|---|
 | **Problema** | Obtener un plan de dieta + gym comprensible sin pagar dietista/entrenador de entrada. |
 | **Objetivo actual** | MVP funcional en local y en GitHub Pages. |
-| **Dirección** | Mejorar variedad de menús, feedback de usuarios (Issues), posible export PDF, persistencia opcional. Ver [[Roadmap]] y [[Pendiente]]. |
+| **Dirección** | Mejorar variedad de menús, feedback de usuarios (Issues), export PDF. **Hecho:** 3 modos de plan + personalización por texto. Ver [[Personalizacion y modos]]. |
 
 ---
 
@@ -103,6 +103,9 @@ Tabla completa: [[Que tocar y que no]].
 - Plan dieta 4 semanas, menú diario variado, calendario → [[Plan de dieta]]
 - Plan ejercicio 4 semanas, bloques A/B, acordeones → [[Plan de ejercicio]]
 - Registro peso por ejercicio (localStorage) → [[Registro de pesos]]
+- **Tres modos:** solo dieta, solo gym, completo → [[Personalizacion y modos]]
+- Campo «Qué buscas mejorar» con detección de enfoque (fútbol, glúteos, piernas…)
+- Objetivo **Recomposición corporal**
 - GitHub repo + Pages + `index.html` en raíz → [[Git y GitHub]]
 - Motor en navegador para Pages (`shared/`) → [[Local vs GitHub Pages]]
 

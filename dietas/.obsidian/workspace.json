@@ -11,10 +11,14 @@
             "id": "ced870776dd850d6",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "07 - Bitacora/README.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "Nueva pestaña"
+              "title": "README"
             }
           }
         ]
@@ -178,6 +182,24 @@
   },
   "active": "ced870776dd850d6",
   "lastOpenFiles": [
+    "06 - Operaciones/Sincronizar Pages.md",
+    "06 - Operaciones/Protocolo de cambios.md",
+    "06 - Operaciones/Git y GitHub.md",
+    "06 - Operaciones/Actualizar documentacion.md",
+    "00 - Inicio/Home.md",
+    "00 - Inicio/CONTEXTO-IA.md",
+    "04 - Funcionalidades/Registro de pesos.md",
+    "04 - Funcionalidades/Plan de ejercicio.md",
+    "04 - Funcionalidades/Formulario invitado.md",
+    "04 - Funcionalidades/Plan de dieta.md",
+    "05 - Estado/En progreso.md",
+    "05 - Estado/Completado.md",
+    "03 - Mapa de archivos/Shared.md",
+    "03 - Mapa de archivos/Raiz y despliegue.md",
+    "03 - Mapa de archivos/Que tocar y que no.md",
+    "03 - Mapa de archivos/Frontend.md",
+    "03 - Mapa de archivos/Backend.md",
+    "01 - Vision/Proposito.md",
     "Bienvenido.md"
   ]
 }

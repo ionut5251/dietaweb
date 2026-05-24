@@ -90,6 +90,104 @@ textarea {
   cursor: not-allowed;
 }
 
+.mode-selector-title {
+  text-align: center;
+  margin: 0 0 1.5rem;
+  color: var(--color-text);
+}
+
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text);
+  font: inherit;
+  transition: border-color 0.2s, transform 0.15s;
+  min-height: 160px;
+}
+
+.mode-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.mode-card-featured {
+  border-color: var(--color-accent-dim);
+  background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-surface-2) 100%);
+}
+
+.mode-card-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.mode-card-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.mode-card-desc {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-header h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.btn-back {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn-back:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.personalization-banner h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.personalization-banner {
+  border-left: 3px solid var(--color-warm);
+}
+
+.form-grid .form-group.hidden {
+  display: none;
+}
+
 .error-box {
   background: rgba(231, 111, 111, 0.15);
   border: 1px solid var(--color-danger);

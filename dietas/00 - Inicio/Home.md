@@ -46,7 +46,7 @@ flowchart TB
 | Visión | [[Proposito]] · [[Roadmap]] |
 | Arquitectura | [[Arquitectura general]] · [[Flujo de datos]] · [[Local vs GitHub Pages]] |
 | Código | [[Que tocar y que no]] · [[Shared]] · [[Frontend]] · [[Backend]] · [[Raiz y despliegue]] |
-| Funciones | [[Formulario invitado]] · [[Plan de dieta]] · [[Plan de ejercicio]] · [[Registro de pesos]] |
+| Funciones | [[Formulario invitado]] · [[Plan de dieta]] · [[Plan de ejercicio]] · [[Registro de pesos]] · [[Personalizacion y modos]] |
 | Estado | [[Completado]] · [[En progreso]] · [[Pendiente]] |
 | Operaciones | [[Git y GitHub]] · [[Sincronizar Pages]] · [[Protocolo de cambios]] · [[Actualizar documentacion]] |
 

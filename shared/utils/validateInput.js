@@ -1,15 +1,27 @@
-import { ACTIVITY_FACTORS, GOALS, LIMITS } from '../config/constants.js';
+import { ACTIVITY_FACTORS, GOALS, LIMITS, PLAN_MODES } from '../config/constants.js';
+import { parsePersonalization } from '../services/personalizationEngine.js';
 
 const EXPERIENCE = ['principiante', 'intermedio', 'avanzado'];
+const MODES = Object.keys(PLAN_MODES);
 
 export function validatePlanInput(body) {
   const errors = [];
+  const modo = body.modo || 'completo';
+
+  if (!MODES.includes(modo)) {
+    errors.push('Modo de plan no válido.');
+  }
+
+  const includesDieta = modo === 'dieta' || modo === 'completo';
+  const includesEjercicio = modo === 'ejercicio' || modo === 'completo';
 
   const peso = Number(body.pesoKg);
   const edad = Number(body.edad);
   const altura = Number(body.alturaCm);
   const dias = Number(body.diasEntrenoSemana);
-  const comidas = Number(body.comidasPorDia);
+  const comidas = body.comidasPorDia != null && body.comidasPorDia !== ''
+    ? Number(body.comidasPorDia)
+    : null;
 
   if (!body.sexo || !['hombre', 'mujer'].includes(body.sexo)) {
     errors.push('Selecciona sexo (hombre o mujer).');
@@ -29,36 +41,57 @@ export function validatePlanInput(body) {
   if (!body.objetivo || !GOALS[body.objetivo]) {
     errors.push('Objetivo no válido.');
   }
-  if (!body.experiencia || !EXPERIENCE.includes(body.experiencia)) {
-    errors.push('Nivel de experiencia en entrenamiento no válido.');
+
+  if (includesEjercicio) {
+    const exp = body.experiencia || 'intermedio';
+    if (!EXPERIENCE.includes(exp)) {
+      errors.push('Nivel de experiencia en entrenamiento no válido.');
+    }
   }
+
   if (Number.isNaN(dias) || dias < LIMITS.diasMin || dias > LIMITS.diasMax) {
     errors.push(`Días de entreno: entre ${LIMITS.diasMin} y ${LIMITS.diasMax} por semana.`);
   }
-  if (Number.isNaN(comidas) || comidas < LIMITS.comidasMin || comidas > LIMITS.comidasMax) {
-    errors.push(`Comidas al día: entre ${LIMITS.comidasMin} y ${LIMITS.comidasMax}.`);
+
+  if (includesDieta) {
+    if (Number.isNaN(comidas) || comidas < LIMITS.comidasMin || comidas > LIMITS.comidasMax) {
+      errors.push(`Comidas al día: entre ${LIMITS.comidasMin} y ${LIMITS.comidasMax}.`);
+    }
+  }
+
+  const queBuscaMejorar = (body.queBuscaMejorar || '').trim();
+  if (queBuscaMejorar.length > LIMITS.queBuscaMejorarMax) {
+    errors.push(`«Qué buscas mejorar» máximo ${LIMITS.queBuscaMejorarMax} caracteres.`);
   }
 
   if (body.restriccionesAlimentarias && typeof body.restriccionesAlimentarias !== 'string') {
     errors.push('Restricciones alimentarias debe ser texto.');
   }
+  if (body.lesionesLimitaciones && typeof body.lesionesLimitaciones !== 'string') {
+    errors.push('Lesiones o limitaciones debe ser texto.');
+  }
 
   if (errors.length) return { ok: false, errors };
+
+  const personalizacion = parsePersonalization(queBuscaMejorar, body.sexo);
 
   return {
     ok: true,
     data: {
+      modo,
       sexo: body.sexo,
       pesoKg: peso,
       edad,
       alturaCm: altura,
       nivelActividad: body.nivelActividad,
       objetivo: body.objetivo,
-      experiencia: body.experiencia,
+      experiencia: includesEjercicio ? (body.experiencia || 'intermedio') : null,
       diasEntrenoSemana: dias,
-      comidasPorDia: comidas,
-      restriccionesAlimentarias: (body.restriccionesAlimentarias || '').trim(),
-      lesionesLimitaciones: (body.lesionesLimitaciones || '').trim(),
+      comidasPorDia: includesDieta ? comidas : null,
+      queBuscaMejorar,
+      personalizacion,
+      restriccionesAlimentarias: includesDieta ? (body.restriccionesAlimentarias || '').trim() : '',
+      lesionesLimitaciones: includesEjercicio ? (body.lesionesLimitaciones || '').trim() : '',
     },
   };
 }

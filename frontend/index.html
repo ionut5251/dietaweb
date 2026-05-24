@@ -11,17 +11,43 @@
 <body>
   <header class="site-header">
     <div class="container">
-      <h1>Tu plan personal de dieta y ejercicio</h1>
-      <p>Como invitado, introduce los datos que pediría un dietista y un entrenador. Recibirás un plan claro y fácil de seguir.</p>
+      <h1>Tu plan personal de salud y fitness</h1>
+      <p>Elige qué quieres generar. Como invitado, sin registro. Planes claros y adaptados a ti.</p>
     </div>
   </header>
 
   <main class="container">
-    <section id="form-section" class="card">
-      <h2>Tus datos</h2>
+    <section id="mode-selector" class="mode-selector">
+      <h2 class="mode-selector-title">¿Qué necesitas hoy?</h2>
+      <div class="mode-cards">
+        <button type="button" class="mode-card" data-mode="dieta">
+          <span class="mode-card-icon">🥗</span>
+          <span class="mode-card-name">Plan de Dieta</span>
+          <span class="mode-card-desc">Menú mensual personalizado según tu objetivo y preferencias.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="ejercicio">
+          <span class="mode-card-icon">🏋️</span>
+          <span class="mode-card-name">Rutina de Gimnasio</span>
+          <span class="mode-card-desc">4 semanas de entrenamiento con rotación y seguimiento de pesos.</span>
+        </button>
+        <button type="button" class="mode-card mode-card-featured" data-mode="completo">
+          <span class="mode-card-icon">⚡</span>
+          <span class="mode-card-name">Dieta + Gimnasio</span>
+          <span class="mode-card-desc">Plan completo: nutrición y rutina alineadas con tu objetivo.</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="form-section" class="card hidden">
+      <div class="form-header">
+        <button type="button" class="btn-back" id="btn-back">← Volver</button>
+        <h2 id="form-title">Tus datos</h2>
+      </div>
       <form id="plan-form" novalidate>
+        <input type="hidden" id="modo" name="modo" value="completo" />
+
         <div class="form-grid">
-          <div class="form-group">
+          <div class="form-group" data-show="dieta ejercicio completo">
             <label for="sexo">Sexo</label>
             <select id="sexo" name="sexo" required>
               <option value="">— Seleccionar —</option>
@@ -29,52 +55,57 @@
               <option value="mujer">Mujer</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="dieta ejercicio completo">
             <label for="edad">Edad (años)</label>
             <input type="number" id="edad" name="edad" min="14" max="90" required placeholder="Ej. 30" />
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="dieta ejercicio completo">
             <label for="pesoKg">Peso actual (kg)</label>
             <input type="number" id="pesoKg" name="pesoKg" min="35" max="250" step="0.1" required placeholder="Ej. 72" />
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="dieta ejercicio completo">
             <label for="alturaCm">Altura (cm)</label>
             <input type="number" id="alturaCm" name="alturaCm" min="120" max="220" required placeholder="Ej. 175" />
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" data-show="dieta ejercicio completo">
             <label for="nivelActividad">Actividad diaria (sin contar el gym)</label>
             <select id="nivelActividad" name="nivelActividad" required>
               <option value="">— Cargando opciones —</option>
             </select>
             <span class="hint">Trabajo de oficina, caminar al trabajo, etc.</span>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="dieta ejercicio completo">
             <label for="objetivo">Objetivo principal</label>
             <select id="objetivo" name="objetivo" required>
               <option value="">— Seleccionar —</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="completo">
             <label for="experiencia">Experiencia en el gym</label>
-            <select id="experiencia" name="experiencia" required>
+            <select id="experiencia" name="experiencia">
               <option value="">— Seleccionar —</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="dieta ejercicio completo">
             <label for="diasEntrenoSemana">Días para entrenar / semana</label>
             <input type="number" id="diasEntrenoSemana" name="diasEntrenoSemana" min="2" max="7" value="3" required />
             <span class="hint">Mínimo 2, máximo 7</span>
           </div>
-          <div class="form-group">
+          <div class="form-group" data-show="dieta completo">
             <label for="comidasPorDia">Comidas al día</label>
-            <input type="number" id="comidasPorDia" name="comidasPorDia" min="1" max="5" value="4" required />
+            <input type="number" id="comidasPorDia" name="comidasPorDia" min="1" max="5" value="4" />
             <span class="hint">Mínimo 1, máximo 5</span>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" data-show="dieta ejercicio completo">
+            <label for="queBuscaMejorar">¿Qué buscas mejorar?</label>
+            <textarea id="queBuscaMejorar" name="queBuscaMejorar" rows="3" placeholder="Ej. rutina enfocada a fútbol para fortalecer piernas, o más hincapié en glúteos…"></textarea>
+            <span class="hint">Describe tu hobby, zona corporal o meta. Adaptamos dieta y/o gym según lo que escribas.</span>
+          </div>
+          <div class="form-group full-width" data-show="dieta completo">
             <label for="restriccionesAlimentarias">Restricciones alimentarias (opcional)</label>
             <textarea id="restriccionesAlimentarias" name="restriccionesAlimentarias" placeholder="Ej. sin lactosa, vegetariano, alergia frutos secos…"></textarea>
           </div>
-          <div class="form-group full-width">
+          <div class="form-group full-width" data-show="ejercicio completo">
             <label for="lesionesLimitaciones">Lesiones o limitaciones (opcional)</label>
             <textarea id="lesionesLimitaciones" name="lesionesLimitaciones" placeholder="Ej. molestia rodilla derecha, evitar impacto…"></textarea>
           </div>
@@ -86,13 +117,18 @@
     <div id="error-container" class="error-box hidden" role="alert"></div>
 
     <section id="results-section" class="hidden">
-      <div class="card">
+      <div class="form-header">
+        <button type="button" class="btn-back" id="btn-new-plan">← Crear otro plan</button>
+      </div>
+      <div id="personalization-banner" class="card personalization-banner hidden"></div>
+
+      <div id="profile-card" class="card hidden">
         <h2>Tu perfil energético</h2>
         <div id="profile-stats" class="stats-row"></div>
         <p id="legal-aviso" class="legal"></p>
       </div>
 
-      <div class="tabs">
+      <div id="results-tabs" class="tabs hidden">
         <button type="button" class="tab-btn active" data-tab="dieta">Plan de dieta</button>
         <button type="button" class="tab-btn" data-tab="ejercicio">Plan de ejercicio</button>
       </div>

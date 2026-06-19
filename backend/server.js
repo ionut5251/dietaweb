@@ -30,6 +30,8 @@ app.get('*', (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  const ai = process.env.OPENAI_API_KEY ? 'OpenAI activa' : 'OpenAI inactiva (añade OPENAI_API_KEY)';
-  console.log(`Servidor en http://localhost:${PORT} — ${ai}`);
+  const claude = process.env.ANTHROPIC_API_KEY ? '✓ Claude (rutinas)' : '✗ Claude inactivo (añade ANTHROPIC_API_KEY)';
+  const openai = process.env.OPENAI_API_KEY ? '✓ OpenAI (dieta)' : '✗ OpenAI inactivo';
+  console.log(`Servidor en http://localhost:${PORT}`);
+  console.log(`  IA: ${claude} | ${openai}`);
 });

@@ -1,7 +1,120 @@
 /**
- * Prompts para OpenAI — estilo entrenador/dietista profesional.
+ * Prompts para IA — dietista/entrenador profesional.
+ * Claude (Anthropic) para rutinas de ejercicio.
+ * OpenAI para planes de dieta.
  */
 
+export const CLAUDE_MODEL = 'claude-sonnet-4-5';
+
+export const AI_MODELS = {
+  text: 'gpt-4o-mini',
+  vision: 'gpt-4o',
+};
+
+export function getEnhanceMaxTokens(basePlan) {
+  return basePlan.planEjercicio ? 7500 : 2500;
+}
+
+// ─── SPLITS RECOMENDADOS POR DÍAS ───────────────────────────────────────────
+function getSplitGuide(dias) {
+  const guia = {
+    2: `2 días: Cuerpo completo x2 (Full Body A/B). Ejercicios compuestos prioritarios, al menos 5 por sesión.`,
+    3: `3 días: PPL — Día 1 EMPUJE (Pecho+Hombro+Tríceps), Día 2 TIRÓN (Espalda+Bíceps+Femorales), Día 3 PIERNAS (Cuádriceps+Glúteo+Gemelos+Core).`,
+    4: `4 días: Push/Pull/Legs/Upper — Día 1 EMPUJE, Día 2 PIERNAS (fuerza), Día 3 TIRÓN, Día 4 PIERNAS+CORE (metabolic/HIIT). Alternativa válida si pide más metabolismo: Pecho+Hombro+Core / Piernas+Finisher / Espalda+Bíceps / Pierna+HIIT.`,
+    5: `5 días: Día 1 EMPUJE, Día 2 PIERNAS fuerza, Día 3 TIRÓN, Día 4 HOMBROS+BRAZOS+Core, Día 5 PIERNAS metabolic+HIIT. Ajusta según lo que pide el cliente.`,
+    6: `6 días: PPL/PPL — dos vueltas a Push/Pull/Legs con volumen moderado por sesión y un día de recuperación activa.`,
+  };
+  return guia[dias] || guia[4];
+}
+
+// ─── PROMPT CLAUDE — RUTINAS DE GIMNASIO ────────────────────────────────────
+export function buildClaudeWorkoutPrompt(input) {
+  const cliente = {
+    sexo: input.sexo,
+    edad: input.edad,
+    pesoKg: input.pesoKg,
+    alturaCm: input.alturaCm,
+    objetivo: input.objetivo,
+    nivelActividad: input.nivelActividad,
+    experiencia: input.experiencia || 'intermedio',
+    diasEntreno: input.diasEntrenoSemana,
+    queBuscaMejorar: input.queBuscaMejorar || '',
+    lesiones: input.lesionesLimitaciones || '',
+  };
+
+  const splitGuide = getSplitGuide(cliente.diasEntreno);
+
+  const system = `Eres un entrenador personal de élite que diseña rutinas de gimnasio con el rigor y estilo de Sergio Peinado (España) y Chuy Almada (México).
+
+FILOSOFÍA:
+- Rutinas COMPLETAS y REALES. Nada genérico. Volumen profesional.
+- Cada sesión tiene ejercicios concretos con series, repeticiones, descansos y nota técnica breve.
+- Formato de ejercicio: "Press banca → 4×8-10 (subida explosiva, pausa en pecho)"
+- Bloques bien definidos: Principal / Core / Cardio o Finisher según el día.
+- Los splits cuadran con los días de la semana y el objetivo del cliente.
+- Adapta si hay lesiones o limitaciones.
+- Progresión de semanas: semana 1 base, semana 2 +1 serie o +peso, semana 3 técnicas avanzadas (drop sets, superseries), semana 4 descarga o intensidad máxima.
+- Responde ÚNICAMENTE JSON válido. Sin texto fuera del JSON.`;
+
+  const user = `CLIENTE:
+${JSON.stringify(cliente, null, 2)}
+
+GUÍA DE SPLIT PARA ${cliente.diasEntreno} DÍAS:
+${splitGuide}
+
+INSTRUCCIONES:
+1. Analiza "queBuscaMejorar" y personaliza: si pide fuerza en piernas dale más volumen de pierna; si pide metabolismo añade finishers HIIT; si pide volumen de pecho más series de press; etc.
+2. Genera sesionesCompletas para TODAS las semanas (1 a 4) con progresión real.
+3. Mínimo 6 ejercicios en el bloque Principal de cada sesión, hasta 9-10 en días de grupo muscular grande.
+4. Bloques Core y Cardio/Finisher donde corresponda (días de piernas, días de empuje si el cliente lo pide).
+5. Descansos específicos: fuerza 90-180s, hipertrofia 60-90s, metabólico/circuito 30-45s.
+6. Usa ejercicios que se hacen en gimnasio estándar (con maquinaria habitual, mancuernas, barra, polea, TRX).
+
+ESTRUCTURA JSON OBLIGATORIA:
+{
+  "split": "nombre del split elegido (ej: PPL, Push/Pull/Legs/Upper, etc.)",
+  "filosofiaSemanas": "1-2 frases sobre la progresión de las 4 semanas",
+  "sesionesCompletas": [
+    {
+      "semana": 1,
+      "indiceSesion": 0,
+      "titulo": "DÍA 1 – EMPUJE · Pecho + Hombro + Tríceps",
+      "notaEntrenador": "consejo clave de esta sesión",
+      "bloques": [
+        {
+          "nombre": "Principal",
+          "ejercicios": [
+            {
+              "nombre": "Press banca con barra",
+              "series": "4",
+              "repeticiones": "8-10",
+              "descanso": "90-120 s",
+              "como": "Subida explosiva, bajada controlada 3 s",
+              "enfoque": "Pecho",
+              "registrarPeso": true
+            }
+          ]
+        },
+        {
+          "nombre": "Core",
+          "ejercicios": []
+        }
+      ]
+    }
+  ]
+}
+
+REGLAS FINALES:
+- sesionesCompletas debe tener ${cliente.diasEntreno * 4} entradas en total (${cliente.diasEntreno} sesiones × 4 semanas).
+- Los índices van de 0 a ${cliente.diasEntreno - 1} dentro de cada semana.
+- Semana 1: volumen base. Semana 2: +intensidad. Semana 3: técnicas avanzadas. Semana 4: pico o descarga.
+- Si hay lesiones: adapta o elimina los ejercicios que las afecten.
+- Solo JSON. Sin texto fuera del JSON.`;
+
+  return { system, user };
+}
+
+// ─── PROMPT OPENAI — DIETA ───────────────────────────────────────────────────
 export function buildEnhancePlanPrompt(input, basePlan) {
   const cliente = {
     modo: input.modo,
@@ -17,94 +130,34 @@ export function buildEnhancePlanPrompt(input, basePlan) {
     restricciones: input.restriccionesAlimentarias,
     lesiones: input.lesionesLimitaciones,
     experiencia: input.experiencia,
-    intensityProfile: input.intensityProfile,
   };
 
-  const esquemaSemana = basePlan.planEjercicio?.semanas?.[0]?.sesiones?.map((s, i) => ({
-    indiceSesion: i,
-    dia: s.dia,
-    enfoque: s.enfoque,
-    ejerciciosActuales: s.ejercicios?.slice(0, 8).map((e) => e.nombre),
-    tieneBloques: Boolean(s.bloques?.length),
-  }));
-
-  return `Eres un entrenador personal de élite y dietista-nutricionista (estilo profesional español, directo, sin humo).
-Tu cliente quiere una rutina BUENA — no genérica. Volumen real, series×reps concretas, bloques (Principal / Core / Cardio / Finisher / HIIT).
+  return `Eres dietista-nutricionista de élite en España. Tu cliente quiere un plan de dieta personalizado.
 
 CLIENTE:
 ${JSON.stringify(cliente, null, 2)}
 
-ESQUEMA SEMANAL ACTUAL (sem. 1):
-${JSON.stringify(esquemaSemana, null, 2)}
+REGLAS:
+1. Adapta macros y calorías al objetivo (déficit, superávit, mantenimiento).
+2. Respeta restricciones alimentarias al 100%.
+3. Consejos prácticos, directos, sin relleno.
+4. Solo JSON válido en español.
 
-REGLAS CRÍTICAS:
-1. Interpreta «qué buscas mejorar» al detalle (metabólico, piernas, fútbol, influencer fitness, etc.). NO copies influencers literalmente ni prometas resultados irreales.
-2. Si pide rutina avanzada/metabólica: mínimo 6-8 ejercicios en bloque Principal + bloque Core + Cardio o Finisher cuando encaje.
-3. Formato profesional: "Press banca → 4×8-10 (subida explosiva)".
-4. Reparte la intensidad según días/semana (${input.diasEntrenoSemana} días).
-5. Dieta: reglas específicas según objetivo + texto del cliente.
-6. Lesiones: adapta ejercicios si las hay.
-7. Solo JSON válido en español.
-
-ESTRUCTURA JSON OBLIGATORIA:
+ESTRUCTURA JSON:
 {
-  "interpretacionProfesional": "3-5 frases: estrategia como entrenador",
-  "enfoquePrincipal": "etiqueta corta",
+  "interpretacionProfesional": "2-3 frases sobre estrategia nutricional",
+  "enfoquePrincipal": "etiqueta corta (ej: Déficit moderado + alto proteíco)",
   "dieta": {
-    "reglasAdicionales": ["hasta 6"],
-    "notaMacros": "string o null",
-    "consejosSemanales": ["hasta 4"]
+    "reglasAdicionales": ["hasta 6 reglas específicas"],
+    "notaMacros": "distribución de macros orientativa o null",
+    "consejosSemanales": ["hasta 4 consejos prácticos"]
   },
   "ejercicio": {
-    "principiosAdicionales": ["hasta 5"],
-    "cardioRecomendacion": "string",
-    "sesionesCompletas": [
-      {
-        "semana": 1,
-        "indiceSesion": 0,
-        "titulo": "LUNES – PECHO + HOMBRO + CORE",
-        "notaEntrenador": "consejo de sesión",
-        "bloques": [
-          {
-            "nombre": "Principal",
-            "ejercicios": [
-              {
-                "nombre": "Press banca",
-                "series": "4",
-                "repeticiones": "8-10",
-                "descanso": "90-120 s",
-                "como": "subida explosiva controlada",
-                "enfoque": "Pecho",
-                "registrarPeso": true
-              }
-            ]
-          },
-          {
-            "nombre": "Core",
-            "ejercicios": []
-          },
-          {
-            "nombre": "Cardio",
-            "ejercicios": [
-              {
-                "nombre": "Cinta inclinada",
-                "series": "1",
-                "repeticiones": "15-20 min",
-                "descanso": "—",
-                "como": "8-12% inclinación",
-                "enfoque": "Cardio",
-                "registrarPeso": false
-              }
-            ]
-          }
-        ]
-      }
-    ]
+    "principiosAdicionales": [],
+    "cardioRecomendacion": "",
+    "sesionesCompletas": []
   }
-}
-
-IMPORTANTE: sesionesCompletas debe incluir UNA entrada por cada sesión de la semana 1 (${input.diasEntrenoSemana} sesiones, indices 0 a ${input.diasEntrenoSemana - 1}).
-Si no hay plan de dieta, dieta con arrays vacíos. Si no hay ejercicio, ejercicio vacío.`;
+}`;
 }
 
 export function buildPhotoAnalysisPrompt(context) {
@@ -120,18 +173,9 @@ Responde SOLO JSON:
   "observaciones": ["2-5 observaciones concretas y respetuosas"],
   "progresoDetectado": "positivo|neutro|a_mejorar",
   "zonasDestacadas": ["zonas donde se nota mejora"],
-  "zonasATrabajar": ["zonas a seguir trabajando, ej. abdomen inferior"],
+  "zonasATrabajar": ["zonas a seguir trabajando"],
   "recomendaciones": ["3-5 acciones concretas dieta/entreno"],
   "mensajeMotivacional": "1 frase breve",
   "aviso": "Esta valoración es orientativa y no sustituye evaluación médica."
 }`;
-}
-
-export const AI_MODELS = {
-  text: 'gpt-4o-mini',
-  vision: 'gpt-4o',
-};
-
-export function getEnhanceMaxTokens(basePlan) {
-  return basePlan.planEjercicio ? 7500 : 2500;
 }

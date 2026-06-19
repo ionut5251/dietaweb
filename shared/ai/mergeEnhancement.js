@@ -175,11 +175,53 @@ export function parseAiJson(raw) {
   }
 }
 
-export function humanizeAiError(message) {
+export function humanizeAiError(message, provider = 'openai') {
   if (!message) return 'Error desconocido de IA';
   if (/quota|billing|insufficient/i.test(message)) {
-    return 'OpenAI sin crédito: añade saldo en platform.openai.com/settings/billing. Mientras tanto usamos la rutina avanzada automática.';
+    return provider === 'claude'
+      ? 'Claude sin crédito: añade saldo en console.anthropic.com. Rutina avanzada automática aplicada.'
+      : 'OpenAI sin crédito: añade saldo en platform.openai.com/settings/billing. Rutina avanzada automática aplicada.';
   }
-  if (/rate limit/i.test(message)) return 'Demasiadas peticiones a OpenAI. Espera 1 minuto e inténtalo de nuevo.';
+  if (/rate.?limit/i.test(message)) return `Demasiadas peticiones a ${provider === 'claude' ? 'Claude' : 'OpenAI'}. Espera un momento e inténtalo de nuevo.`;
+  if (/overload|529/i.test(message)) return 'Claude está sobrecargado en este momento. Intenta de nuevo en unos segundos.';
   return message;
+}
+
+/**
+ * Fusiona un plan de ejercicio generado completamente por Claude.
+ * Reemplaza todas las sesiones de todas las semanas.
+ */
+export function mergeClaudeWorkout(basePlan, claudeJson, input) {
+  if (!claudeJson || !Array.isArray(claudeJson.sesionesCompletas)) return basePlan;
+
+  const result = clone(basePlan);
+  result.aiEnhanced = true;
+
+  if (!result.planEjercicio) return result;
+
+  const pe = result.planEjercicio;
+
+  if (claudeJson.split) {
+    pe.resumen = pe.resumen || {};
+    pe.resumen.splitElegido = claudeJson.split;
+  }
+  if (claudeJson.filosofiaSemanas) {
+    pe.resumen = pe.resumen || {};
+    pe.resumen.filosofiaSemanas = claudeJson.filosofiaSemanas;
+  }
+  pe.resumen.refinadoPorIA = true;
+  pe.resumen.esRutinaAvanzada = true;
+
+  for (const mod of claudeJson.sesionesCompletas) {
+    const semana = pe.semanas?.find((s) => s.numero === (mod.semana || 1));
+    const sesion = semana?.sesiones?.[mod.indiceSesion];
+    if (!sesion) continue;
+    applySesionCompleta(sesion, mod, mod.indiceSesion);
+  }
+
+  result.personalizacion = result.personalizacion || {};
+  result.personalizacion.splitElegido = claudeJson.split || result.personalizacion.splitElegido;
+  result.personalizacion.generadoPorClaude = true;
+
+  return result;
 }

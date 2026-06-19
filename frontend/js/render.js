@@ -203,7 +203,10 @@ function renderWeekAccordion(semana) {
 
 export function renderAiNotice(result) {
   if (result.aiEnhanced) {
-    return `<div class="ai-notice ai-notice-ok">Plan refinado con IA profesional (OpenAI).</div>`;
+    const provider = result.plan?.personalizacion?.generadoPorClaude ? 'Claude (Anthropic)' : 'IA profesional';
+    const split = result.plan?.planEjercicio?.resumen?.splitElegido;
+    const splitText = split ? ` · Split: <strong>${split}</strong>` : '';
+    return `<div class="ai-notice ai-notice-ok">Rutina generada por ${provider}${splitText}</div>`;
   }
   if (result.aiError) {
     return `<div class="ai-notice ai-notice-warn">${result.aiError}</div>`;
@@ -220,10 +223,12 @@ export function renderExercise(plan) {
       <div class="stats-row">
         <span class="stat-pill">${resumen.diasPorSemana} días/semana</span>
         <span class="stat-pill">Nivel: <strong>${resumen.nivelLabel}</strong></span>
+        ${resumen.splitElegido ? `<span class="stat-pill">Split: <strong>${resumen.splitElegido}</strong></span>` : ''}
         ${resumen.enfoquePersonalizado ? `<span class="stat-pill">Enfoque: <strong>${resumen.enfoquePersonalizado}</strong></span>` : ''}
-        ${resumen.esRutinaAvanzada ? '<span class="stat-pill">Rutina <strong>avanzada</strong></span>' : ''}
+        ${resumen.esRutinaAvanzada ? '<span class="stat-pill">✦ Rutina <strong>avanzada</strong></span>' : ''}
       </div>
-      <p class="hint">${resumen.cardioExtra}</p>
+      ${resumen.filosofiaSemanas ? `<p class="hint"><em>${resumen.filosofiaSemanas}</em></p>` : ''}
+      ${resumen.cardioExtra ? `<p class="hint">${resumen.cardioExtra}</p>` : ''}
       <p class="hint"><strong>Rotación:</strong> ${resumen.rotacion}</p>
       <h3>Principios</h3>
       <ul class="rules-list">${principios.map((p) => `<li>${p}</li>`).join('')}</ul>

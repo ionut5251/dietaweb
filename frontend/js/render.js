@@ -223,9 +223,10 @@ export function renderExercise(plan) {
       <div class="stats-row">
         <span class="stat-pill">${resumen.diasPorSemana} días/semana</span>
         <span class="stat-pill">Nivel: <strong>${resumen.nivelLabel}</strong></span>
+        ${resumen.modalidadEntrenamiento ? `<span class="stat-pill">Tipo: <strong>${resumen.modalidadEntrenamiento}</strong></span>` : ''}
         ${resumen.splitElegido ? `<span class="stat-pill">Split: <strong>${resumen.splitElegido}</strong></span>` : ''}
         ${resumen.enfoquePersonalizado ? `<span class="stat-pill">Enfoque: <strong>${resumen.enfoquePersonalizado}</strong></span>` : ''}
-        ${resumen.esRutinaAvanzada ? '<span class="stat-pill">✦ Rutina <strong>avanzada</strong></span>' : ''}
+        ${resumen.esRutinaAvanzada ? '<span class="stat-pill">✦ Avanzada</span>' : ''}
       </div>
       ${resumen.filosofiaSemanas ? `<p class="hint"><em>${resumen.filosofiaSemanas}</em></p>` : ''}
       ${resumen.cardioExtra ? `<p class="hint">${resumen.cardioExtra}</p>` : ''}

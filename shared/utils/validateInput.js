@@ -1,4 +1,4 @@
-import { ACTIVITY_FACTORS, GOALS, LIMITS, PLAN_MODES } from '../config/constants.js';
+import { ACTIVITY_FACTORS, GOALS, LIMITS, PLAN_MODES, TIEMPO_SESION } from '../config/constants.js';
 import { parsePersonalization } from '../services/personalizationEngine.js';
 import { applyIntensityToInput } from '../services/advancedWorkoutTemplates.js';
 
@@ -65,6 +65,12 @@ export function validatePlanInput(body) {
     errors.push(`«Qué buscas mejorar» máximo ${LIMITS.queBuscaMejorarMax} caracteres.`);
   }
 
+  // tiempoSesion es opcional; si se envía debe ser un valor válido
+  const tiempoSesion = body.tiempoSesion ? Number(body.tiempoSesion) : 60;
+  if (!LIMITS.tiempoSesionValidos.includes(tiempoSesion)) {
+    errors.push('Tiempo de sesión no válido.');
+  }
+
   if (body.restriccionesAlimentarias && typeof body.restriccionesAlimentarias !== 'string') {
     errors.push('Restricciones alimentarias debe ser texto.');
   }
@@ -91,6 +97,7 @@ export function validatePlanInput(body) {
       personalizacion,
       restriccionesAlimentarias: includesDieta ? (body.restriccionesAlimentarias || '').trim() : '',
       lesionesLimitaciones: includesEjercicio ? (body.lesionesLimitaciones || '').trim() : '',
+      tiempoSesion,
     };
 
   const data = includesEjercicio

@@ -57,9 +57,10 @@ async function loadOptions() {
   if (optionsLoaded) return;
   try {
     const opts = await fetchOptions();
-    fillSelect('nivelActividad', opts.actividad, '— Seleccionar actividad —');
-    fillSelect('objetivo', opts.objetivos, '— Seleccionar objetivo —');
-    fillSelect('experiencia', opts.experiencia, '— Seleccionar experiencia —', false);
+    fillSelect('nivelActividad', opts.actividad, '— Seleccionar —');
+    fillSelect('objetivo', opts.objetivos, '— Seleccionar —');
+    fillSelect('experiencia', opts.experiencia, '— Seleccionar —', false);
+    fillSelect('tiempoSesion', opts.tiempoSesion || [], '— Seleccionar —', false);
     optionsLoaded = true;
   } catch {
     showError('No se pudieron cargar las opciones. Comprueba la conexión o el servidor local.');
@@ -88,6 +89,12 @@ function applyFormMode(mode) {
     exp.setAttribute('required', '');
   } else if (exp) {
     exp.removeAttribute('required');
+  }
+
+  const tiempo = document.getElementById('tiempoSesion');
+  if (tiempo) {
+    if (mode === 'ejercicio' || mode === 'completo') tiempo.setAttribute('required', '');
+    else tiempo.removeAttribute('required');
   }
 }
 
@@ -129,6 +136,7 @@ function getFormPayload() {
   if (currentMode === 'ejercicio' || currentMode === 'completo') {
     payload.experiencia = fd.get('experiencia') || 'intermedio';
     payload.lesionesLimitaciones = fd.get('lesionesLimitaciones') || '';
+    payload.tiempoSesion = fd.get('tiempoSesion') ? Number(fd.get('tiempoSesion')) : 60;
   }
 
   return payload;

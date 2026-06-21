@@ -1,22 +1,65 @@
 /**
  * Generador de planes de ejercicio.
- * Rutinas de 6-8 ejercicios por sesión, ~60-90 min con calentamiento.
- * Splits adaptados al objetivo y a lo que el usuario describe.
+ * Rutinas adaptadas al tiempo disponible (30-90 min) y al tipo de entrenamiento.
+ * Splits completamente distintos según lo que describe el usuario.
  */
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
 /**
  * Crea un slot (ejercicio) con variante A (semanas 1-2) y B (semanas 3-4).
- * Acepta overrides opcionales de series/reps/descanso para ese ejercicio concreto.
+ * tipoSlot: 'compound' (multimuscular) | 'accessory' | 'isolation' | 'core' | 'cardio'
+ * Con tiempos cortos (30-45 min) solo se usan 'compound'.
+ * Con tiempos medios (60 min) se incluyen también 'accessory'.
+ * Con tiempos largos (75-90 min) se incluyen también 'isolation'.
  */
 function slot(id, enfoque, nombreA, nombreB, comoA = '', comoB = '', notas = '', ov = {}) {
-  return { id, enfoque, varianteA: { nombre: nombreA, como: comoA, notas }, varianteB: { nombre: nombreB, como: comoB, notas }, ...ov };
+  return {
+    id, enfoque,
+    varianteA: { nombre: nombreA, como: comoA, notas },
+    varianteB: { nombre: nombreB, como: comoB, notas },
+    tipoSlot: ov.tipoSlot || 'accessory',
+    ...ov,
+  };
 }
 
 /** Ejercicio de cardio o funcional sin registro de peso */
 function cardioSlot(id, enfoque, nombreA, nombreB, comoA = '', comoB = '') {
-  return slot(id, enfoque, nombreA, nombreB, comoA, comoB, '', { noRegistro: true, seriesOv: '1', repsOv: '' });
+  return slot(id, enfoque, nombreA, nombreB, comoA, comoB, '', {
+    noRegistro: true, seriesOv: '1', repsOv: '', tipoSlot: 'cardio',
+  });
+}
+
+// ─── PERFILES DE TIEMPO ───────────────────────────────────────────────────────
+// Determina cuántos slots tomar y qué tipo de ejercicios incluir según los minutos.
+const TIME_PROFILES = {
+  // 30 min: 3 ejercicios (2 compuestos + 1 accesorio), 3 series, descansos cortos
+  30: { slotsMax: 3, tiposPermitidos: ['compound', 'accessory', 'cardio'],                    seriesMod: -1, descansoMod: 0.5,  label: '30 min' },
+  // 45 min: 4 ejercicios, compuestos + accesorios clave, sin aislamientos puros
+  45: { slotsMax: 4, tiposPermitidos: ['compound', 'accessory', 'cardio'],                    seriesMod: -1, descansoMod: 0.65, label: '45 min' },
+  // 60 min: 6 ejercicios, añade core
+  60: { slotsMax: 6, tiposPermitidos: ['compound', 'accessory', 'core', 'cardio'],             seriesMod: 0,  descansoMod: 0.8,  label: '60 min' },
+  // 75 min: 8 ejercicios, incluye aislamientos
+  75: { slotsMax: 8, tiposPermitidos: ['compound', 'accessory', 'isolation', 'core', 'cardio'],seriesMod: 0,  descansoMod: 1.0,  label: '75 min' },
+  // 90 min: todo, más series
+  90: { slotsMax: 11, tiposPermitidos: ['compound', 'accessory', 'isolation', 'core', 'cardio'],seriesMod: 1, descansoMod: 1.0,  label: '90 min' },
+};
+
+function getTimeProfile(tiempoSesion) {
+  const t = Number(tiempoSesion) || 60;
+  return TIME_PROFILES[t] || TIME_PROFILES[60];
+}
+
+/** Filtra y limita los slots según el perfil de tiempo */
+function applyTimeProfile(slots, profile) {
+  const filtered = slots.filter((s) => profile.tiposPermitidos.includes(s.tipoSlot || 'accessory'));
+  return filtered.slice(0, profile.slotsMax);
+}
+
+/** Ajusta series según modificador de tiempo (+1 / 0 / -1) */
+function adjustSeries(baseSeries, mod) {
+  const n = Number(baseSeries) || 3;
+  return String(Math.max(2, Math.min(5, n + mod)));
 }
 
 const EXPERIENCE_LEVEL = {
@@ -25,9 +68,13 @@ const EXPERIENCE_LEVEL = {
   avanzado:     { series: '4', reps: '6-10',  descanso: '90-120 s' },
 };
 
-function resolveSlot(s, bloque, nivel, sessionIndex) {
+function resolveSlot(s, bloque, nivel, sessionIndex, timeProfile) {
   const variant = bloque === 'A' ? s.varianteA : s.varianteB;
   const noReg = s.noRegistro || ['cardio', 'movilidad', 'estiramiento', 'respiracion'].includes(s.id);
+
+  const baseSeries = s.seriesOv ?? nivel.series;
+  const finalSeries = timeProfile ? adjustSeries(baseSeries, timeProfile.seriesMod) : baseSeries;
+
   return {
     id: `${s.id}-s${sessionIndex}`,
     enfoque: s.enfoque,
@@ -35,24 +82,28 @@ function resolveSlot(s, bloque, nivel, sessionIndex) {
     como: variant.como || '',
     notas: variant.notas || '',
     varianteUsada: bloque === 'A' ? 'Semanas 1-2' : 'Semanas 3-4',
-    series: s.seriesOv ?? nivel.series,
-    repeticiones: s.repsOv ?? (s.repsOv === '' ? '—' : nivel.reps),
+    series: finalSeries,
+    repeticiones: s.repsOv ?? nivel.reps,
     descanso: s.descansoOv ?? nivel.descanso,
     registrarPeso: !noReg,
     bloque: 'Principal',
   };
 }
 
-function buildSesiones(template, nivel, dias, bloque) {
-  return template.map((t, idx) => ({
-    dia: t.dia,
-    enfoque: t.enfoque,
-    duracionEstimada: estimateDuration(t.slots?.length ?? 6, t.tipoSesion),
-    calentamiento: t.calentamiento || defaultWarmup(t.enfoque),
-    ejercicios: (t.slots || []).map((s) => resolveSlot(s, bloque, nivel, idx)),
-    enfriamiento: t.enfriamiento || '5-8 min estiramientos suaves de los músculos trabajados.',
-    diaSemana: suggestWeekday(idx, dias),
-  }));
+function buildSesiones(template, nivel, dias, bloque, timeProfile) {
+  return template.map((t, idx) => {
+    const rawSlots = t.slots || [];
+    const filteredSlots = timeProfile ? applyTimeProfile(rawSlots, timeProfile) : rawSlots;
+    return {
+      dia: t.dia,
+      enfoque: t.enfoque,
+      duracionEstimada: timeProfile ? timeProfile.label : estimateDuration(filteredSlots.length, t.tipoSesion),
+      calentamiento: t.calentamiento || defaultWarmup(t.enfoque),
+      ejercicios: filteredSlots.map((s) => resolveSlot(s, bloque, nivel, idx, timeProfile)),
+      enfriamiento: t.enfriamiento || '5-8 min estiramientos suaves de los músculos trabajados.',
+      diaSemana: suggestWeekday(idx, dias),
+    };
+  });
 }
 
 function estimateDuration(numExercises, tipo) {
@@ -105,96 +156,96 @@ function labelExperience(exp) {
 
 function pushSlots() {
   return [
-    slot('pb_plano',   'Pecho', 'Press banca con barra', 'Press banca con mancuernas', 'Bajada 2-3 s, pausa 1 s en pecho. Principal del día.', 'Más ROM, palmas neutras en lo más bajo.', '', { seriesOv: '4', repsOv: '6-10', descansoOv: '90-120 s' }),
-    slot('pb_incl',    'Pecho', 'Press inclinado con mancuernas', 'Press inclinado en máquina', 'Banco 30-45°, activa pectoral superior.', 'Controla la excéntrica 2-3 s.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90 s' }),
-    slot('pb_decl',    'Pecho', 'Press declinado en máquina o barra', 'Fondos en paralelas con carga', 'Pectoral inferior. Codos a 45°.', 'Cuerpo inclinado ligeramente hacia adelante.', '', { seriesOv: '3', repsOv: '8-10', descansoOv: '90 s' }),
-    slot('apertura',   'Pecho', 'Aperturas con mancuernas en plano', 'Cruces en polea media', 'Estiramiento controlado, codo levemente doblado.', 'Polea media, manos hacia el centro y abajo.', '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s' }),
-    slot('press_mil',  'Hombro', 'Press militar sentado con mancuernas', 'Press Arnold sentado', 'Core activo, no arquees lumbar.', 'Rotación de neutro a prono en la subida.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90 s' }),
-    slot('elev_lat',   'Hombro', 'Elevaciones laterales con mancuernas', 'Elevaciones laterales en polea baja', 'Peso ligero, sin impulso de torso. Codo ligeramente flexionado.', 'Cable a la cadera, tensión constante.', '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s' }),
-    slot('fp_salud',   'Hombro posterior', 'Face pull en polea alta con cuerda', 'Pájaros inversos en banco inclinado 45°', 'Tira a la nariz, codos hacia afuera y arriba.', 'Mancuernas pequeñas, retrae escápulas.', '', { seriesOv: '3', repsOv: '15', descansoOv: '60 s' }),
-    slot('tric_polea', 'Tríceps', 'Extensiones en polea alta con cuerda', 'Press cerrado con barra', 'Codos pegados al torso, sólo mueve antebrazo.', 'Agarre estrecho, subida explosiva.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s' }),
-    slot('tric_franc', 'Tríceps', 'Press francés con barra Z', 'Fondos en paralelas asistidas', 'Activa cabeza larga, codos sin salir excesivo.', 'Si dominas la técnica, sin asistencia.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s' }),
+    slot('pb_plano',   'Pecho',           'Press banca con barra',              'Press banca con mancuernas',        'Bajada 2-3 s, pausa 1 s en pecho.', 'Más ROM, palmas neutras abajo.', '', { seriesOv: '4', repsOv: '6-10', descansoOv: '90-120 s', tipoSlot: 'compound' }),
+    slot('press_mil',  'Hombro',          'Press militar sentado con mancuernas','Press Arnold sentado',              'Core activo, no arquees lumbar.',    'Rotación de neutro a prono.',    '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90 s',      tipoSlot: 'compound' }),
+    slot('pb_incl',    'Pecho',           'Press inclinado con mancuernas',      'Press inclinado en máquina',        'Banco 30-45°, activa pectoral superior.', 'Excéntrica 2-3 s.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90 s', tipoSlot: 'accessory' }),
+    slot('tric_polea', 'Tríceps',         'Extensiones en polea alta con cuerda','Press cerrado con barra',           'Codos pegados al torso.',           'Agarre estrecho, subida explosiva.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s', tipoSlot: 'accessory' }),
+    slot('elev_lat',   'Hombro',          'Elevaciones laterales con mancuernas','Elevaciones laterales en polea baja','Sin impulso de torso.',            'Tensión constante en cable.',   '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'accessory' }),
+    slot('pb_decl',    'Pecho',           'Press declinado en máquina o barra',  'Fondos en paralelas con carga',     'Pectoral inferior. Codos a 45°.',  'Inclinado ligeramente hacia adelante.', '', { seriesOv: '3', repsOv: '8-10', descansoOv: '90 s', tipoSlot: 'accessory' }),
+    slot('fp_salud',   'Hombro posterior','Face pull en polea alta con cuerda',  'Pájaros inversos en banco 45°',     'Tira a la nariz, codos hacia afuera.', 'Mancuernas pequeñas.', '', { seriesOv: '3', repsOv: '15', descansoOv: '60 s', tipoSlot: 'accessory' }),
+    slot('apertura',   'Pecho',           'Aperturas con mancuernas en plano',   'Cruces en polea media',             'Estiramiento controlado.',         'Polea media, manos al centro.', '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('tric_franc', 'Tríceps',         'Press francés con barra Z',           'Fondos en paralelas asistidas',     'Activa cabeza larga.',             'Sin asistencia si puedes.',      '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s', tipoSlot: 'isolation' }),
   ];
 }
 
 function pullSlots() {
   return [
-    slot('jalon_ancho',  'Espalda', 'Jalón al pecho agarre ancho', 'Dominadas asistidas', 'Pecho alto al bar, escápulas hacia atrás y abajo.', 'Controla bajada 2-3 s, pecho al bar.', '', { seriesOv: '4', repsOv: '6-10', descansoOv: '90-120 s' }),
-    slot('jalon_neutro', 'Espalda', 'Jalón agarre neutro', 'Pullover en polea con cuerda', 'Mayor activación dorsal inferior.', 'Brazos casi rectos, tira desde codos.', '', { seriesOv: '3', repsOv: '8-10', descansoOv: '90 s' }),
-    slot('remo_barra',   'Espalda', 'Remo inclinado con barra', 'Remo con mancuerna apoyado en banco', 'Tira al ombligo, codos pegados.', 'Pecho en banco, retrae escápulas al final.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90 s' }),
-    slot('remo_polea',   'Espalda', 'Remo en polea baja con barra V', 'Remo en máquina sentado', 'No arquees lumbar en el tirón.', 'Aprieta escápulas al finalizar.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60-90 s' }),
-    slot('fp_espalda',   'Hombro posterior', 'Face pull en polea alta', 'Abducción horizontal con mancuernas', 'Salud del manguito rotador.', 'Hombros bajos, no encogidos.', '', { seriesOv: '3', repsOv: '15', descansoOv: '60 s' }),
-    slot('curl_barra',   'Bíceps', 'Curl bíceps con barra Z', 'Curl bíceps con barra recta', 'Codos fijos al torso, cúbito supino.', 'Agarre a la anchura de hombros.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '60-90 s' }),
-    slot('curl_manc',    'Bíceps', 'Curl con mancuernas alterno', 'Curl martillo bilateral', 'Alterna brazos, controla bajada 2 s.', 'Activa braquial y braquiorradial.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s' }),
-    slot('curl_conc',    'Bíceps', 'Curl de concentración en banco', 'Curl en polea baja', 'Codo en muslo interior, pico máximo.', 'Tensión constante en polea.', '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s' }),
+    slot('jalon_ancho',  'Espalda',          'Jalón al pecho agarre ancho',      'Dominadas asistidas',             'Pecho alto, escápulas hacia atrás y abajo.', 'Controla bajada 2-3 s.', '', { seriesOv: '4', repsOv: '6-10', descansoOv: '90-120 s', tipoSlot: 'compound' }),
+    slot('remo_barra',   'Espalda',          'Remo inclinado con barra',         'Remo con mancuerna apoyado en banco','Tira al ombligo, codos pegados.','Pecho en banco, retrae escápulas.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90 s', tipoSlot: 'compound' }),
+    slot('curl_barra',   'Bíceps',           'Curl bíceps con barra Z',          'Curl bíceps con barra recta',     'Codos fijos al torso.',           'Agarre a la anchura de hombros.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '60-90 s', tipoSlot: 'accessory' }),
+    slot('jalon_neutro', 'Espalda',          'Jalón agarre neutro',              'Pullover en polea con cuerda',    'Mayor activación dorsal inferior.','Brazos casi rectos.',           '', { seriesOv: '3', repsOv: '8-10', descansoOv: '90 s', tipoSlot: 'accessory' }),
+    slot('remo_polea',   'Espalda',          'Remo en polea baja con barra V',   'Remo en máquina sentado',         'No arquees lumbar en el tirón.',  'Aprieta escápulas al final.',   '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60-90 s', tipoSlot: 'accessory' }),
+    slot('fp_espalda',   'Hombro posterior', 'Face pull en polea alta',          'Abducción horizontal con mancuernas','Salud del manguito rotador.',  'Hombros bajos, no encogidos.', '', { seriesOv: '3', repsOv: '15', descansoOv: '60 s', tipoSlot: 'accessory' }),
+    slot('curl_manc',    'Bíceps',           'Curl con mancuernas alterno',      'Curl martillo bilateral',         'Alterna brazos, controla bajada 2 s.','Activa braquial.',          '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('curl_conc',    'Bíceps',           'Curl de concentración en banco',   'Curl en polea baja',              'Codo en muslo interior, pico máximo.','Tensión constante.',        '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'isolation' }),
   ];
 }
 
 function legSlots() {
   return [
-    slot('sentadilla',  'Cuádriceps', 'Sentadilla trasera con barra', 'Sentadilla goblet con mancuerna', 'Profundidad cómoda, rodillas alineadas.', 'Mancuerna al pecho, espalda recta.', '', { seriesOv: '4', repsOv: '6-10', descansoOv: '120-180 s' }),
-    slot('prensa',      'Cuádriceps', 'Prensa inclinada pies a la anchura de hombros', 'Hack squat en máquina', 'No bloquees rodillas arriba, control excéntrico.', 'Talones más altos en la plataforma.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90-120 s' }),
-    slot('extension',   'Cuádriceps', 'Extensión de cuádriceps en máquina', 'Sentadilla búlgara con mancuernas', 'Pausa 1 s arriba, activa VMO.', 'Paso largo, torso erguido.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60-90 s' }),
-    slot('rdl',         'Isquiotibiales', 'Peso muerto rumano con barra', 'Peso muerto rumano con mancuernas', 'Bisagra de cadera, barra cerca del cuerpo.', 'Mismo patrón, mancuernas laterales.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90-120 s' }),
-    slot('curl_fem',    'Isquiotibiales', 'Curl femoral tumbado en máquina', 'Nordic curl o curl con fitball', 'Caderas en mesa, no eleves pelvis.', 'Máximo control excéntrico.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60-90 s' }),
-    slot('hip_thrust',  'Glúteo', 'Hip thrust con barra en banco', 'Puente de glúteo unilateral en suelo', 'Pausa 2 s arriba, aprieta glúteo al máximo.', 'Pie sobre elevación, máxima contracción.', '', { seriesOv: '4', repsOv: '10-12', descansoOv: '90 s' }),
-    slot('gemelo_pie',  'Gemelos', 'Elevación de talones de pie (unilateral)', 'Gemelo en prensa', 'Pausa 2 s arriba, rango completo de tobillo.', 'Punta del pie en borde de plataforma.', '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s' }),
-    slot('gemelo_sent', 'Sóleo', 'Elevación de talones sentado con mancuerna', 'Gemelo sentado en máquina', 'Rodilla 90°, trabaja sóleo profundo.', 'Mayor rango con máquina dedicada.', '', { seriesOv: '3', repsOv: '15-20', descansoOv: '60 s' }),
+    slot('sentadilla',  'Cuádriceps',    'Sentadilla trasera con barra',          'Sentadilla goblet con mancuerna',  'Profundidad cómoda, rodillas alineadas.', 'Mancuerna al pecho, espalda recta.', '', { seriesOv: '4', repsOv: '6-10', descansoOv: '120-180 s', tipoSlot: 'compound' }),
+    slot('rdl',         'Isquiotibiales','Peso muerto rumano con barra',           'Peso muerto rumano con mancuernas','Bisagra de cadera, barra cerca del cuerpo.','Mismo patrón.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90-120 s', tipoSlot: 'compound' }),
+    slot('hip_thrust',  'Glúteo',        'Hip thrust con barra en banco',          'Puente de glúteo unilateral',      'Pausa 2 s arriba, aprieta glúteo.',     'Pie sobre elevación.',               '', { seriesOv: '4', repsOv: '10-12', descansoOv: '90 s', tipoSlot: 'compound' }),
+    slot('prensa',      'Cuádriceps',    'Prensa inclinada pies a la anchura',     'Hack squat en máquina',            'No bloquees rodillas arriba.',          'Talones más altos en la plataforma.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '90-120 s', tipoSlot: 'accessory' }),
+    slot('curl_fem',    'Isquiotibiales','Curl femoral tumbado en máquina',        'Nordic curl o curl con fitball',   'Caderas en mesa, no eleves pelvis.',    'Máximo control excéntrico.',          '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60-90 s', tipoSlot: 'accessory' }),
+    slot('extension',   'Cuádriceps',    'Extensión de cuádriceps en máquina',     'Sentadilla búlgara con mancuernas','Pausa 1 s arriba, activa VMO.',         'Paso largo, torso erguido.',          '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60-90 s', tipoSlot: 'accessory' }),
+    slot('gemelo_pie',  'Gemelos',       'Elevación de talones de pie (unilateral)','Gemelo en prensa',                'Pausa 2 s arriba, rango completo.',     'Punta del pie en borde.',             '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('gemelo_sent', 'Sóleo',         'Elevación de talones sentado con mancuerna','Gemelo sentado en máquina',    'Rodilla 90°, trabaja sóleo profundo.',  'Mayor rango con máquina.',            '', { seriesOv: '3', repsOv: '15-20', descansoOv: '60 s', tipoSlot: 'isolation' }),
   ];
 }
 
 function shoulderSlots() {
   return [
-    slot('press_mil',   'Hombro', 'Press militar con barra de pie', 'Press militar con mancuernas sentado', 'Core activo, no arquees lumbares.', 'ROM completo, control en bajada.', '', { seriesOv: '4', repsOv: '6-8', descansoOv: '90-120 s' }),
-    slot('press_arn',   'Hombro', 'Press Arnold sentado', 'Press en máquina de hombros', 'Rotación de neutro a prono controlada.', 'ROM completo, sin trampa.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '90 s' }),
-    slot('elev_lat2',   'Hombro lateral', 'Elevaciones laterales con mancuernas', 'Elevaciones laterales en polea cruzada', 'Sin impulso, codo levemente flexionado.', 'Tensión constante en cable.', '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s' }),
-    slot('elev_front',  'Hombro anterior', 'Elevaciones frontales con mancuerna (alterna)', 'Elevaciones frontales con disco', 'Llega a la horizontal, sin balanceo.', 'Peso único, más estabilidad.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s' }),
-    slot('pajaro',      'Hombro posterior', 'Pájaros con mancuernas en banco inclinado', 'Reverse fly en máquina', 'Aprieta escápulas, codo ligeramente doblado.', 'Ajusta apoyo de pecho.', '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s' }),
-    slot('fp_hombro',   'Hombro posterior', 'Face pull en polea alta con cuerda', 'Abducción horizontal con mancuernas', 'Tira a la nariz, codos hacia afuera.', 'Hombros bajos, retrae escápulas.', '', { seriesOv: '3', repsOv: '15', descansoOv: '60 s' }),
-    slot('encog',       'Trapecios', 'Encogimiento de hombros con mancuernas', 'Encogimiento en máquina Smith', 'Pausa 1 s arriba, no rotar hombros.', 'Mismo patrón, más estabilidad.', '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s' }),
+    slot('press_mil',   'Hombro',          'Press militar con barra de pie',        'Press militar con mancuernas sentado','Core activo, no arquees lumbares.',   'ROM completo.',              '', { seriesOv: '4', repsOv: '6-8', descansoOv: '90-120 s', tipoSlot: 'compound' }),
+    slot('press_arn',   'Hombro',          'Press Arnold sentado',                  'Press en máquina de hombros',         'Rotación de neutro a prono.',         'ROM completo.',              '', { seriesOv: '3', repsOv: '10-12', descansoOv: '90 s', tipoSlot: 'accessory' }),
+    slot('elev_lat2',   'Hombro lateral',  'Elevaciones laterales con mancuernas',  'Elevaciones en polea cruzada',        'Sin impulso.',                        'Tensión constante.',         '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'accessory' }),
+    slot('fp_hombro',   'Hombro posterior','Face pull en polea alta con cuerda',    'Abducción horizontal con mancuernas', 'Tira a la nariz, codos afuera.',      'Hombros bajos.',             '', { seriesOv: '3', repsOv: '15', descansoOv: '60 s', tipoSlot: 'accessory' }),
+    slot('pajaro',      'Hombro posterior','Pájaros con mancuernas en banco 45°',   'Reverse fly en máquina',              'Codo ligeramente doblado.',           'Ajusta apoyo de pecho.',     '', { seriesOv: '4', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('elev_front',  'Hombro anterior', 'Elevaciones frontales con mancuerna',   'Elevaciones frontales con disco',     'Horizontal al frente, sin balanceo.', 'Peso único.',                '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('encog',       'Trapecios',       'Encogimiento de hombros con mancuernas','Encogimiento en máquina Smith',       'Pausa 1 s arriba.',                   'Más estabilidad.',           '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s', tipoSlot: 'isolation' }),
   ];
 }
 
 function armsSlots() {
   return [
-    slot('curl_bz',    'Bíceps', 'Curl bíceps barra Z', 'Curl bíceps con barra recta', 'Codos fijos al torso, sin balanceo.', 'Codos quietos, ROM completo.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '60-90 s' }),
-    slot('curl_mc',    'Bíceps', 'Curl con mancuernas alterno', 'Curl en predicador con mancuerna', 'Controla bajada 2 s, supinación al subir.', 'Codo bloqueado en predicador.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s' }),
-    slot('curl_mart',  'Bíceps', 'Curl martillo con mancuernas', 'Curl de cuerda en polea baja', 'Activa braquial y braquiorradial.', 'Cuerda baja, mantén muñecas neutras.', '', { seriesOv: '3', repsOv: '12', descansoOv: '60 s' }),
-    slot('franc',      'Tríceps', 'Press francés con barra Z tumbado', 'Extensiones sobre cabeza con mancuerna', 'Codos no salen hacia los lados.', 'Mancuerna con ambas manos, codos quietos.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '60-90 s' }),
-    slot('polea_tric', 'Tríceps', 'Extensiones en polea alta con cuerda', 'Extensiones con barra recta', 'Codos pegados al torso, ROM completo.', 'Barra recta, aprieta al final.', '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s' }),
-    slot('fondos_tric','Tríceps', 'Fondos en paralelas (asistidos si es necesario)', 'Press cerrado en banco plano', 'Cuerpo recto, sin inclinar.', 'Manos a la anchura de hombros.', '', { seriesOv: '3', repsOv: '8-10', descansoOv: '60 s' }),
+    slot('curl_bz',    'Bíceps', 'Curl bíceps barra Z',                       'Curl bíceps con barra recta',          'Codos fijos al torso, sin balanceo.', 'ROM completo.',                '', { seriesOv: '4', repsOv: '8-10', descansoOv: '60-90 s', tipoSlot: 'accessory' }),
+    slot('franc',      'Tríceps','Press francés con barra Z tumbado',          'Extensiones sobre cabeza con mancuerna','Codos no salen hacia los lados.',    'Mancuerna bilateral, codos quietos.', '', { seriesOv: '4', repsOv: '8-10', descansoOv: '60-90 s', tipoSlot: 'accessory' }),
+    slot('curl_mc',    'Bíceps', 'Curl con mancuernas alterno',                'Curl en predicador con mancuerna',     'Controla bajada 2 s, supinación.',    'Codo bloqueado.',             '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('polea_tric', 'Tríceps','Extensiones en polea alta con cuerda',       'Extensiones con barra recta',          'Codos pegados al torso.',             'Aprieta al final.',           '', { seriesOv: '3', repsOv: '10-12', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('curl_mart',  'Bíceps', 'Curl martillo con mancuernas',               'Curl de cuerda en polea baja',         'Activa braquial y braquiorradial.',   'Muñecas neutras.',            '', { seriesOv: '3', repsOv: '12', descansoOv: '60 s', tipoSlot: 'isolation' }),
+    slot('fondos_tric','Tríceps','Fondos en paralelas (asistidos si es necesario)','Press cerrado en banco plano',     'Cuerpo recto.',                       'Manos a la anchura de hombros.', '', { seriesOv: '3', repsOv: '8-10', descansoOv: '60 s', tipoSlot: 'isolation' }),
   ];
 }
 
 function coreSlots() {
   return [
-    slot('plancha',    'Core', 'Plancha frontal', 'Plancha con elevación de pierna alterna', 'Glúteo apretado, no hundas cadera. 3×45-60 s.', 'Mantén cadera estable al elevar.', '', { seriesOv: '3', repsOv: '45-60 s', descansoOv: '45 s', noRegistro: true }),
-    slot('elev_pierna','Core', 'Elevaciones de piernas tumbado', 'Elevaciones en barra fija', 'Lumbar pegada al suelo, piernas rectas.', 'Control en la bajada.', '', { seriesOv: '3', repsOv: '12-15', descansoOv: '60 s', noRegistro: true }),
-    slot('crunch',     'Core', 'Crunch lento', 'Crunch en polea o en máquina', 'Sin tirar de cuello, 2 s arriba.', 'Cuerda a la nuca, flexiona vértebra a vértebra.', '', { seriesOv: '3', repsOv: '15-20', descansoOv: '60 s', noRegistro: true }),
-    slot('russian',    'Core', 'Russian twist con disco', 'Russian twist con balón medicinal', 'Pies despegados, rota desde torso.', 'Mismo pero más inestabilidad.', '', { seriesOv: '3', repsOv: '12/lado', descansoOv: '45 s', noRegistro: true }),
-    slot('dead_bug',   'Core', 'Dead bug', 'Bird dog en cuadrupedia', 'Lumbar pegada, extensión opuesta.', 'Cuadrupedia, no arquees lumbar.', '', { seriesOv: '3', repsOv: '10/lado', descansoOv: '45 s', noRegistro: true }),
+    slot('plancha',    'Core', 'Plancha frontal',              'Plancha con elevación de pierna', 'Glúteo apretado. 3×45-60 s.','Mantén cadera estable.',       '', { seriesOv: '3', repsOv: '45-60 s', descansoOv: '45 s', noRegistro: true, tipoSlot: 'core' }),
+    slot('elev_pierna','Core', 'Elevaciones de piernas tumbado','Elevaciones en barra fija',      'Lumbar pegada al suelo.',    'Control en la bajada.',        '', { seriesOv: '3', repsOv: '12-15',   descansoOv: '60 s', noRegistro: true, tipoSlot: 'core' }),
+    slot('crunch',     'Core', 'Crunch lento',                 'Crunch en polea o en máquina',   'Sin tirar de cuello.',       'Flexiona vértebra a vértebra.','', { seriesOv: '3', repsOv: '15-20',   descansoOv: '60 s', noRegistro: true, tipoSlot: 'core' }),
+    slot('russian',    'Core', 'Russian twist con disco',      'Russian twist con balón medicinal','Rota desde torso.',         'Más inestabilidad.',           '', { seriesOv: '3', repsOv: '12/lado', descansoOv: '45 s', noRegistro: true, tipoSlot: 'core' }),
+    slot('dead_bug',   'Core', 'Dead bug',                     'Bird dog en cuadrupedia',         'Lumbar pegada.',            'No arquees lumbar.',           '', { seriesOv: '3', repsOv: '10/lado', descansoOv: '45 s', noRegistro: true, tipoSlot: 'core' }),
   ];
 }
 
 function fullBodyPushLegSlots() {
   return [
-    slot('sq_fb', 'Pierna', 'Sentadilla con barra o goblet', 'Prensa inclinada', 'Profundidad cómoda, técnica primero.', 'Pies a anchura de hombros.', '', { seriesOv: '3', repsOv: '8-10' }),
-    slot('pb_fb',  'Pecho', 'Press banca con barra', 'Flexiones inclinadas en banco', 'Ejercicio compuesto del día.', 'Cuerpo recto, pecho al banco.', '', { seriesOv: '3', repsOv: '8-10' }),
-    slot('rdl_fb', 'Isquiotibiales', 'Peso muerto rumano con barra', 'Peso muerto rumano con mancuernas', 'Bisagra de cadera limpia.', 'Mismo patrón con mancuernas.', '', { seriesOv: '3', repsOv: '10' }),
-    slot('pm_fb',  'Hombro', 'Press militar con mancuernas', 'Elevaciones laterales', 'Core activo.', 'Sin impulso.', '', { seriesOv: '3', repsOv: '10-12' }),
-    slot('zan_fb', 'Pierna', 'Zancadas caminando con mancuernas', 'Step-up al cajón', 'Paso largo, rodilla trasera cerca del suelo.', 'Empuja con talón delantero.', '', { seriesOv: '3', repsOv: '10/pierna' }),
-    slot('pla_fb', 'Core', 'Plancha frontal', 'Dead bug', '3×45 s abdomen apretado.', 'Brazos y piernas opuestos.', '', { seriesOv: '3', repsOv: '40-60 s', noRegistro: true }),
+    slot('sq_fb', 'Pierna', 'Sentadilla con barra o goblet', 'Prensa inclinada',         'Técnica primero.', 'Pies a anchura de hombros.',   '', { seriesOv: '3', repsOv: '8-10', tipoSlot: 'compound' }),
+    slot('pb_fb', 'Pecho',  'Press banca con barra',         'Flexiones inclinadas banco','Compuesto del día.','Cuerpo recto.',               '', { seriesOv: '3', repsOv: '8-10', tipoSlot: 'compound' }),
+    slot('rdl_fb','Isquiotibiales','Peso muerto rumano con barra','Peso muerto con mancuernas','Bisagra de cadera.','Mismo patrón.',           '', { seriesOv: '3', repsOv: '10',   tipoSlot: 'compound' }),
+    slot('pm_fb', 'Hombro', 'Press militar con mancuernas',  'Elevaciones laterales',     'Core activo.',     'Sin impulso.',                '', { seriesOv: '3', repsOv: '10-12',tipoSlot: 'accessory'}),
+    slot('zan_fb','Pierna', 'Zancadas caminando con mancuernas','Step-up al cajón',        'Paso largo.',      'Empuja con talón.',           '', { seriesOv: '3', repsOv: '10/pierna', tipoSlot: 'accessory' }),
+    slot('pla_fb','Core',   'Plancha frontal',               'Dead bug',                  '3×45 s apretado.', 'Brazos y piernas opuestos.',  '', { seriesOv: '3', repsOv: '40-60 s', noRegistro: true, tipoSlot: 'core' }),
   ];
 }
 
 function fullBodyPullCoreSlots() {
   return [
-    slot('jalon_fb', 'Espalda', 'Jalón al pecho', 'Dominadas asistidas', 'Pecho alto, escápulas bajas.', 'Controla bajada 2-3 s.', '', { seriesOv: '3', repsOv: '8-10' }),
-    slot('rdl2_fb',  'Isquiotibiales', 'Hip thrust con barra', 'Puente de glúteo unilateral', 'Pausa 2 s arriba.', 'Máxima contracción glútea.', '', { seriesOv: '3', repsOv: '10-12' }),
-    slot('remo_fb',  'Espalda', 'Remo con mancuerna unilateral', 'Remo en máquina sentado', 'Espalda neutra, codos atrás.', 'Aprieta omóplatos.', '', { seriesOv: '3', repsOv: '10-12' }),
-    slot('curl_fb',  'Bíceps', 'Curl bíceps con mancuernas alterno', 'Curl martillo', 'Sin balanceo.', 'Activa braquial.', '', { seriesOv: '3', repsOv: '10-12' }),
-    slot('gem_fb',   'Gemelos', 'Elevación de talones de pie', 'Gemelo en prensa', 'Pausa arriba 2 s.', 'Rango completo.', '', { seriesOv: '3', repsOv: '15' }),
-    slot('core_fb',  'Core', 'Crunch bicicleta', 'Elevaciones de piernas', '20 reps/lado sin tirar cuello.', 'Lumbar pegada al suelo.', '', { seriesOv: '3', repsOv: '12-15', noRegistro: true }),
+    slot('jalon_fb','Espalda',  'Jalón al pecho',              'Dominadas asistidas',       'Escápulas activas.', 'Controla bajada 2-3 s.',  '', { seriesOv: '3', repsOv: '8-10',   tipoSlot: 'compound' }),
+    slot('rdl2_fb', 'Glúteo',   'Hip thrust con barra',        'Puente de glúteo unilateral','Pausa 2 s arriba.','Contracción glútea máx.',  '', { seriesOv: '3', repsOv: '10-12',  tipoSlot: 'compound' }),
+    slot('remo_fb', 'Espalda',  'Remo con mancuerna unilateral','Remo en máquina sentado',  'Espalda neutra.',   'Aprieta omóplatos.',       '', { seriesOv: '3', repsOv: '10-12',  tipoSlot: 'accessory' }),
+    slot('curl_fb', 'Bíceps',   'Curl bíceps con mancuernas alterno','Curl martillo',       'Sin balanceo.',     'Activa braquial.',         '', { seriesOv: '3', repsOv: '10-12',  tipoSlot: 'isolation' }),
+    slot('gem_fb',  'Gemelos',  'Elevación de talones de pie', 'Gemelo en prensa',          'Pausa arriba 2 s.', 'Rango completo.',          '', { seriesOv: '3', repsOv: '15',     tipoSlot: 'isolation' }),
+    slot('core_fb', 'Core',     'Crunch bicicleta',            'Elevaciones de piernas',    '20/lado, sin cuello.','Lumbar pegada.',          '', { seriesOv: '3', repsOv: '12-15',  noRegistro: true, tipoSlot: 'core' }),
   ];
 }
 
@@ -668,11 +719,25 @@ function isLegSession(session) {
   return /pierna|leg|glúteo|gluteo|inferior|cuádriceps/i.test(`${session.dia} ${session.enfoque}`);
 }
 
+// ─── SELECTOR DE TEMPLATE CON AJUSTE POR OBJETIVO ────────────────────────────
+function selectTemplateWithGoal(input) {
+  // Si el objetivo es ganar_fuerza y no hay modality específica detectada → usar strength
+  const { template, modality } = selectTemplate(input);
+  if (modality === 'standard' && input.objetivo === 'ganar_fuerza') {
+    const strengthTpl = STRENGTH_TEMPLATES;
+    const dias = input.diasEntrenoSemana;
+    const t = strengthTpl[dias] || strengthTpl[Math.min(dias, Math.max(...Object.keys(strengthTpl).map(Number)))];
+    if (t) return { template: t, modality: 'strength' };
+  }
+  return { template, modality };
+}
+
 // ─── GENERADOR PRINCIPAL ──────────────────────────────────────────────────────
 export function generateExercisePlan(input) {
   const dias = input.diasEntrenoSemana;
   const nivel = EXPERIENCE_LEVEL[input.experiencia] ?? EXPERIENCE_LEVEL.principiante;
-  const { template, modality } = selectTemplate(input);
+  const { template, modality } = selectTemplateWithGoal(input);
+  const timeProfile = getTimeProfile(input.tiempoSesion || 60);
 
   const semanas = [1, 2, 3, 4].map((num) => {
     const bloque = num <= 2 ? 'A' : 'B';
@@ -681,7 +746,7 @@ export function generateExercisePlan(input) {
       label: `Semana ${num}`,
       bloque,
       bloqueDescripcion: buildWeekDescription(num, modality),
-      sesiones: buildSesiones(template, nivel, dias, bloque),
+      sesiones: buildSesiones(template, nivel, dias, bloque, timeProfile),
     };
   });
 
@@ -730,6 +795,9 @@ function buildResumen(input, dias, modality, nivel) {
     strength: 'Cardio mínimo: 1-2 sesiones suaves de 20-25 min (zona 2). No comprometas la recuperación para los levantamientos pesados.',
   };
 
+  const tiempo = input.tiempoSesion || 60;
+  const tiempoLabel = `${tiempo} min/sesión`;
+
   return {
     diasPorSemana: dias,
     semanasPlan: 4,
@@ -739,6 +807,7 @@ function buildResumen(input, dias, modality, nivel) {
     modalidadEntrenamiento: modalityLabels[modality] || 'General',
     enfoquePersonalizado: input.personalizacion?.label || null,
     focusTecnico: modality,
+    tiempoSesion: tiempoLabel,
     cardioExtra: cardioExtra[modality] || cardioExtra.standard,
     rotacion: 'Semanas 1-2 variante A; semanas 3-4 variante B con más carga o técnicas avanzadas.',
   };

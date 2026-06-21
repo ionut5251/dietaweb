@@ -222,6 +222,7 @@ export function renderExercise(plan) {
       <h2>Plan de ejercicio — 4 semanas</h2>
       <div class="stats-row">
         <span class="stat-pill">${resumen.diasPorSemana} días/semana</span>
+        ${resumen.tiempoSesion ? `<span class="stat-pill">⏱ <strong>${resumen.tiempoSesion}</strong></span>` : ''}
         <span class="stat-pill">Nivel: <strong>${resumen.nivelLabel}</strong></span>
         ${resumen.modalidadEntrenamiento ? `<span class="stat-pill">Tipo: <strong>${resumen.modalidadEntrenamiento}</strong></span>` : ''}
         ${resumen.splitElegido ? `<span class="stat-pill">Split: <strong>${resumen.splitElegido}</strong></span>` : ''}

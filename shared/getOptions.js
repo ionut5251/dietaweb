@@ -1,4 +1,4 @@
-import { ACTIVITY_FACTORS, GOALS, LIMITS, PLAN_MODES } from './config/constants.js';
+import { ACTIVITY_FACTORS, GOALS, LIMITS, PLAN_MODES, TIEMPO_SESION } from './config/constants.js';
 
 export function getOptions() {
   return {
@@ -10,6 +10,10 @@ export function getOptions() {
       { id: 'intermedio', label: 'Intermedio (6 meses - 2 años)' },
       { id: 'avanzado', label: 'Avanzado (más de 2 años)' },
     ],
+    tiempoSesion: Object.values(TIEMPO_SESION).map(({ minutos, label }) => ({
+      id: String(minutos),
+      label,
+    })),
     limites: LIMITS,
   };
 }

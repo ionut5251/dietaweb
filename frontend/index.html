@@ -67,12 +67,12 @@
             <label for="alturaCm">Altura (cm)</label>
             <input type="number" id="alturaCm" name="alturaCm" min="120" max="220" required placeholder="Ej. 175" />
           </div>
-          <div class="form-group full-width" data-show="dieta ejercicio completo">
-            <label for="nivelActividad">Actividad diaria (sin contar el gym)</label>
+          <div class="form-group" data-show="dieta ejercicio completo">
+            <label for="nivelActividad">Actividad diaria</label>
             <select id="nivelActividad" name="nivelActividad" required>
-              <option value="">— Cargando opciones —</option>
+              <option value="">— Seleccionar —</option>
             </select>
-            <span class="hint">Trabajo de oficina, caminar al trabajo, etc.</span>
+            <span class="hint">Sin contar el gym</span>
           </div>
           <div class="form-group" data-show="dieta ejercicio completo">
             <label for="objetivo">Objetivo principal</label>
@@ -90,6 +90,13 @@
             <label for="diasEntrenoSemana">Días para entrenar / semana</label>
             <input type="number" id="diasEntrenoSemana" name="diasEntrenoSemana" min="2" max="7" value="3" required />
             <span class="hint">Mínimo 2, máximo 7</span>
+          </div>
+          <div class="form-group" data-show="ejercicio completo">
+            <label for="tiempoSesion">Tiempo dedicado por sesión</label>
+            <select id="tiempoSesion" name="tiempoSesion" required>
+              <option value="">— Seleccionar —</option>
+            </select>
+            <span class="hint">Incluyendo calentamiento</span>
           </div>
           <div class="form-group" data-show="dieta completo">
             <label for="comidasPorDia">Comidas al día</label>
